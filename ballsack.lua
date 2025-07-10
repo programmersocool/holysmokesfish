@@ -39,16 +39,6 @@ local Logic = {}
 do
 	local ogBrightness = Services.Lighting.Brightness
 	local ogAmbient = Services.Lighting.Ambient
-	Logic.Disablehaste = function(enable: boolean)
-		if enable then
-			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
-			print("hi")
-		else
-			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "Haste"
-		end
-	end
-
-
 	Logic.Fullbright = function(enable: boolean)
 		if enable then
 			Services.Lighting.Brightness = 3
@@ -60,7 +50,18 @@ do
 	end
 end
 
-print("initialized Logic")
+do
+	Logic.Disablehaste = function(enable: boolean)
+		if enable then
+			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
+			print("hi")
+		else
+			Services.RepStorage.FloorReplicated.ClientRemote.disablehaste.Name = "Haste"
+		end
+	end
+end
+
+debugNotify("initialized Logic")
 
 
 ----------------------------------
@@ -117,22 +118,29 @@ do
 	local LeftGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
 end
 
+debugNotify("created Tabs.Main")
+
+
 -- Tabs.Floor
 
 do
 	local LeftGroupbox = Tabs.Floor:AddLeftGroupbox("Backdoor", "circle-question-mark")
-	LeftGroupbox:AddToggle("Disable Haste", {
+	LeftGroupbox:AddToggle("DisableHaste", {
 		Text = "Disable Haste",
 		Default = false,
+
 		Disabled = false, -- Will disable the toggle (true / false)
 		Visible = true, -- Will make the toggle invisible (true / false)
 		Risky = false, -- Makes the text red (the color can be changed using Obsidian.Scheme.Red) (Default value = false)
 		
 		Callback = function(value: boolean)
-			Logic.Disablehaste(value)
+			Logic.DisableHaste(value)
 		end,
 	})
 end
+
+debugNotify("created Tabs.Floor")
+
 
 -- Tabs.Visual
 do
@@ -140,19 +148,16 @@ do
 
 	LeftGroupbox:AddToggle("Fullbright", {
 		Text = "Fullbright",
-
 		Default = false, -- Default value (true / false)
+
 		Disabled = false, -- Will disable the toggle (true / false)
 		Visible = true, -- Will make the toggle invisible (true / false)
 		Risky = false, -- Makes the text red (the color can be changed using Obsidian.Scheme.Red) (Default value = false)
 
 		Callback = function(value: boolean)
-			print("fullbright callback")
 			Logic.Fullbright(value)
 		end,
 	})
-	
-	
 end
 
 debugNotify("created Tabs.Visual")
