@@ -8,12 +8,7 @@ local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB
 
 local Services = {
 	Lighting = game:GetService("Lighting"),
-	RunService = game:GetService("RunService"),
-	Players = game:GetService("Players"),
-	LocalPlayer = game:GetService("Players").LocalPlayer,
-	CurrentRooms = game:GetService("Workspace").CurrentRooms
 }
-
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
@@ -31,6 +26,7 @@ end
 
 debugNotify("loaded libraries")
 
+
 -----------------------------------
 -------------- LOGIC --------------
 -----------------------------------
@@ -38,24 +34,26 @@ debugNotify("loaded libraries")
 local Logic = {}
 
 do
+	local ogBrightness = Services.Lighting.Brightness
+	local ogAmbient = Services.Lighting.Ambient
+
 	Logic.Fullbright = function(enable: boolean)
-		Logic.fbs = Logic.fbs or {}
-		local function applyfb()
-			Services.Lighting.Brightness = 5
-			Services.Lighting.Ambient = Color3.new(1,1,1)
-		end
+		local aa = false
 		if enable then
-			if Logic.fbs.connection then return end
-			Logic.fbs.ogbr = Services.Lighting.Brightness
-			Logic.fbs.balls = Services.Lighting.Ambient
-			Logic.fbs.connection = Services.RunService.Heartbeat:Connect(applyfb)
-			applyfb()
+			if not aa then
+				aa = true
+				spawn(function()
+					while aa do
+						Services.Lighting.Brightness = 5
+						Services.Lighting.Ambient = Color3.fromRGB(255,255,255)
+						wait(0.1)
+					end
+				end)
+			end
 		else
-			if not Logic.fbs.connection then return end
-			Logic.fbs.connection:Disconnect()
-			Logic.fbs.connection = nil
-			Services.Lighting.Brightness = Logic.fbs.ogbr
-			Services.Lighting.Ambient = Logic.fbs.balls
+			aa = false
+			Services.Lighting.Brightness = ogBrightness
+			Services.Lighting.Ambient = ogAmbient
 		end
 	end
 end
@@ -113,7 +111,7 @@ debugNotify("created Tabs")
 
 -- Tabs.Main
 do
-	local LeftGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "[ icon here ]")
+	local LeftGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
 end
 
 -- Tabs.Visual
