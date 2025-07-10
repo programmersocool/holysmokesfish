@@ -10,6 +10,7 @@ local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 -- Common Objects
 local Common = {
@@ -57,21 +58,72 @@ local Logic = {}
 
 -- Fullbright
 do
-	local ogBrightness = Lighting.Brightness
-	local ogAmbient = Lighting.Ambient
-	Logic.Fullbright = function(enable: boolean)
-		if enable then
-			Lighting.Brightness = 3
-			Lighting.Ambient = Color3.new(1,1,1)
-			--Common.Current_Room:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
-			print("current room name:" ..Common.Current_Room.Name)
-			print("ah" ..Common.Current_Room)
-		else
-			Lighting.Brightness = ogBrightness
-			Lighting.Ambient = ogAmbient
+	local fullbrightEnabled = false
+	local originalLighting = {
+		Brightness = Lighting.Brightness,
+		Ambient = Lighting.Ambient,
+		OutdoorAmbient = Lighting.OutdoorAmbient,
+		ColorShift_Top = Lighting.ColorShift_Top,
+		ColorShift_Bottom = Lighting.ColorShift_Bottom,
+		Technology = Lighting.Technology
+	}
+
+	local function updateRoomLighting(room)
+		if not room or not fullbrightEnabled then return end
+
+		-- Set attributes used by Doors for room ambient light
+		room:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
+		room:SetAttribute("ColorShift_Top", Color3.fromRGB(255, 255, 255))
+
+		-- Override lighting objects inside the room model
+		for _, v in pairs(room:GetDescendants()) do
+			if v:IsA("Lighting") then
+				v.Ambient = Color3.new(1, 1, 1)
+				v.Brightness = 3
+			elseif v:IsA("Atmosphere") then
+				v.Haze = 0
+				v.Density = 0
+			elseif v:IsA("ColorCorrectionEffect") then
+				v.Enabled = false
+			elseif v:IsA("Sky") then
+				v.SkyboxBk = ""
+				v.SkyboxDn = ""
+				v.SkyboxFt = ""
+				v.SkyboxLf = ""
+				v.SkyboxRt = ""
+				v.SkyboxUp = ""
+			end
 		end
 	end
+
+	Logic.Fullbright = function(enable: boolean)
+		fullbrightEnabled = enable
+		if enable then
+			-- Apply global lighting changes
+			Lighting.Brightness = 2
+			Lighting.Ambient = Color3.new(1, 1, 1)
+			Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+			Lighting.ColorShift_Top = Color3.new(1, 1, 1)
+			
+			-- Apply to all existing rooms
+			for _, room in pairs(Common.Rooms:GetChildren()) do
+				updateRoomLighting(room)
+			end
+		else
+			-- Restore original global lighting
+			Lighting.Brightness = originalLighting.Brightness
+			Lighting.Ambient = originalLighting.Ambient
+			Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+			Lighting.ColorShift_Top = originalLighting.ColorShift_Top
+			-- Note: Re-enabling fullbright may be needed after moving to a new room to fully restore visuals,
+			-- as the game's scripts will re-apply their own lighting.
+		end
+	end
+
+	-- Connect to new rooms being added to apply fullbright automatically
+	Common.Rooms.ChildAdded:Connect(updateRoomLighting)
 end
+
 debugNotify("initialized Logic")
 
 
@@ -92,18 +144,8 @@ debugNotify("configured Obsidian")
 
 -- Window
 local Window = Obsidian:CreateWindow({
-	-- Set Center to true if you want the menu to appear in the center
-	-- Set AutoShow to true if you want the menu to appear when it is created
-	-- Set Resizable to true if you want to have in-game resizable Window
-	-- Set MobileButtonsSide to "Left" or "Right" if you want the ui toggle & lock buttons to be on the left or right side of the window
-	-- Set ShowCustomCursor to false if you don't want to use the Linoria cursor
-	-- NotifySide = Changes the side of the notifications (Left, Right) (Default value = Left)
-	-- Position and Size are also valid options here
-	-- but you do not need to define them unless you are changing them :)
-
 	Title = "cooliopoolio47 hub",
 	Footer = SCRIPT_ID,
-	--Icon = 95816097006870,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
 	Center = true,
@@ -115,8 +157,6 @@ debugNotify("created Window")
 
 
 -- Tabs
--- You do not have to set your tabs & groups up this way, just a prefrence.
--- You can find more icons in https://lucide.dev/
 local Tabs = {
 	Main = Window:AddTab("Main", "user"),
 	Visual = Window:AddTab("Visual", "eye"),
@@ -142,13 +182,10 @@ do
 	BackdoorGroupbox:AddToggle("DisableHaste", {
 		Text = "Disable Haste",
 		Default = false,
-
-		Disabled = false, -- Will disable the toggle (true / false)
-		Visible = true, -- Will make the toggle invisible (true / false)
-		Risky = false, -- Makes the text red (the color can be changed using Obsidian.Scheme.Red) (Default value = false)
+		Disabled = true, -- Disabled until function is implemented
 		
 		Callback = function(value: boolean)
-			Logic.DisableHaste(value)
+			-- Logic.DisableHaste(value) -- This function was not defined in your original script
 		end,
 	})
 end
@@ -162,12 +199,7 @@ do
 
 	LightingGroupbox:AddToggle("Fullbright", {
 		Text = "Fullbright",
-		Default = false, -- Default value (true / false)
-
-		Disabled = false, -- Will disable the toggle (true / false)
-		Visible = true, -- Will make the toggle invisible (true / false)
-		Risky = false, -- Makes the text red (the color can be changed using Obsidian.Scheme.Red) (Default value = false)
-
+		Default = false,
 		Callback = function(value: boolean)
 			Logic.Fullbright(value)
 		end,
@@ -238,19 +270,14 @@ debugNotify("created Tabs.UI_Settings")
 
 -- SaveManager
 SaveManager:SetLibrary(Obsidian)
-
--- Adds our MenuKeybind to the ignore list
--- (do you want each config to have a different menu key? probably not.)
 SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-
 SaveManager:SetFolder(SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME)
 SaveManager:SetSubFolder(SCRIPT_HUB_PLACE)
-
 SaveManager:BuildConfigSection(Tabs.UI_Settings)
-
 SaveManager:LoadAutoloadConfig()
 debugNotify("initialized SaveManager")
+
 Common.Current_Room_Name.Changed:Connect(updatecurrentroom)
 updatecurrentroom(Common.Current_Room_Name.Value)
--- Done!
+
 debugNotify("loading complete!")
