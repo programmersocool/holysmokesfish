@@ -19,8 +19,7 @@ local Common = {
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
--- Obsidian: typeof(require(script:WaitForChild("Obsidian")))
-local Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+local Obsidian: typeof(require(script:WaitForChild("Obsidian"))) = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
 
 local function debugNotify(text: string)
@@ -59,11 +58,14 @@ end
 -- DisableHaste
 do
 	local hasteObj = Services.ReplicatedStorage.FloorReplicated.ClientRemote.Haste
+	local hasteObj2 = Services.ReplicatedStorage.RemotesFolder.Haste
 	Logic.DisableHaste = function(enable: boolean)
 		if enable then
 			hasteObj.Name = "disablehaste"
+			hasteObj2.name = "disablehaste"
 		else
 			hasteObj.Name = "Haste"
+			hasteObj2.Name = "Haste"
 		end
 	end
 end
@@ -102,6 +104,9 @@ local Window = Obsidian:CreateWindow({
 	--Icon = 95816097006870,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
+	Center = true,
+	AutoShow = true,
+	ToggleKeybind = Enum.KeyCode.RightAlt,
 })
 
 debugNotify("created Window")
