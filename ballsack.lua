@@ -40,9 +40,11 @@ do
 	Logic.Fullbright = function(enable: boolean)
 		if enable then
 			while true do
-			Services.Lighting.Brightness = 5
-			Services.Lighting.Ambient = Color3.fromRGB(255,255,255)
-			task.wait(0.2)
+				if enable then
+				Services.Lighting.Brightness = 5
+				Services.Lighting.Ambient = Color3.fromRGB(255,255,255)
+				end
+			task.wait(0.1)
 			end
 		else
 			Services.Lighting.Brightness = ogBrightness
