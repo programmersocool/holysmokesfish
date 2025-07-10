@@ -8,7 +8,12 @@ local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB
 
 local Services = {
 	Lighting = game:GetService("Lighting"),
+	RunService = game:GetService("RunService"),
+	Players = game:GetService("Players"),
+	LocalPlayer = game:GetService("Players").LocalPlayer,
+	CurrentRooms = game:GetService("Workspace").CurrentRooms
 }
+
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
@@ -26,7 +31,6 @@ end
 
 debugNotify("loaded libraries")
 
-
 -----------------------------------
 -------------- LOGIC --------------
 -----------------------------------
@@ -34,21 +38,23 @@ debugNotify("loaded libraries")
 local Logic = {}
 
 do
-	local ogBrightness = Services.Lighting.Brightness
-	local ogAmbient = Services.Lighting.Ambient
-
 	Logic.Fullbright = function(enable: boolean)
+		Logic.fbs = Logic.fbs or {}
+		local function applyfb()
+			Services.Lighting.Brightness = 5
+			Services.Lighting.Ambient = Color3.new(1,1,1)
+		end
 		if enable then
-			while true do
-				if enable then
-				Services.Lighting.Brightness = 5
-				Services.Lighting.Ambient = Color3.fromRGB(255,255,255)
-				end
-			task.wait(0.1)
-			end
+			if Logic.fbs.connection then return end
+			Logic.fbs.ogbr = Services.Lighting.Brightness
+			Logic.fbs.balls = Services.Lighting.Ambient
+			Logic.fbs.connection = Services.RunService.Heartbeat:Connect(applyfb)
+			applyfb()
 		else
-			Services.Lighting.Brightness = ogBrightness
-			Services.Lighting.Ambient = ogAmbient
+			if not Logic.fbs.connection then return end
+			Logic.fbs.connection:Disconnect()
+			Services.Lighting.Brightness = Logic.fbs.ogbr
+			Services.Lighting.Ambient = Logic.fbs.balls
 		end
 	end
 end
