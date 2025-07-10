@@ -6,16 +6,20 @@ local SCRIPT_HUB_PLACE = "Hotel"
 local SCRIPT_VERSION = "0.0.1" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
-local Services = {
-	Lighting = game:GetService("Lighting"),
-	Players = game:GetService("Players"),
-	Workspace = game:GetService("Workspace"),
-	ReplicatedStorage = game:GetService("ReplicatedStorage"),
+-- Services
+local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Common Objects
+local Common = {
+	Rooms = workspace:WaitForChild("CurrentRooms"),
+	Remotes = ReplicatedStorage:WaitForChild("RemotesFolder"),
+	GameData = ReplicatedStorage:WaitForChild("GameData"),
+	Current_Room_Name = ReplicatedStorage:WaitForChild("GameData").LatestRoom.Value,
+	room_object = workspace.CurrentRooms:FindFirstChild(ReplicatedStorage:WaitForChild("GameData").LatestRoom.Value)
 }
 
-local Common = {
-	Rooms = Services.Workspace:WaitForChild("CurrentRooms")
-}
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
@@ -45,34 +49,19 @@ local Logic = {}
 
 -- Fullbright
 do
-	local ogBrightness = Services.Lighting.Brightness
-	local ogAmbient = Services.Lighting.Ambient
+	local ogBrightness = Lighting.Brightness
+	local ogAmbient = Lighting.Ambient
 	Logic.Fullbright = function(enable: boolean)
 		if enable then
-			Services.Lighting.Brightness = 3
-			Services.Lighting.Ambient = Color3.new(1,1,1)
+			Lighting.Brightness = 3
+			Lighting.Ambient = Color3.new(1,1,1)
+			Common.room_object:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
 		else
-			Services.Lighting.Brightness = ogBrightness
-			Services.Lighting.Ambient = ogAmbient
+			Lighting.Brightness = ogBrightness
+			Lighting.Ambient = ogAmbient
 		end
 	end
 end
-
--- DisableHaste
-do
-	local hasteObj = Services.ReplicatedStorage.FloorReplicated.ClientRemote.Haste
-	local hasteObj2 = Services.ReplicatedStorage.RemotesFolder.Haste
-	Logic.DisableHaste = function(enable: boolean)
-		if enable then
-			hasteObj.Name = "disablehaste"
-			hasteObj2.Name = "disablehaste"
-		else
-			hasteObj.Name = "Haste"
-			hasteObj2.Name = "Haste"
-		end
-	end
-end
-
 debugNotify("initialized Logic")
 
 
