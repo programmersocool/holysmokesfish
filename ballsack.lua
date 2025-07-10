@@ -8,6 +8,9 @@ local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB
 
 local Services = {
 	Lighting = game:GetService("Lighting"),
+	Players = game:GetService("Players"),
+	Rooms = game:GetService("Workspace").CurrentRooms,
+	RepStorage = game:GetService("ReplicatedStorage"),
 }
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
@@ -38,22 +41,19 @@ do
 	local ogAmbient = Services.Lighting.Ambient
 
 	Logic.Fullbright = function(enable: boolean)
-		local aa = false
 		if enable then
-			if not aa then
-				aa = true
-				spawn(function()
-					while aa do
-						Services.Lighting.Brightness = 5
-						Services.Lighting.Ambient = Color3.new(1,1,1)
-						wait(0.01)
-					end
-				end)
-			end
+			Services.Lighting.Brightness = 3
+			Services.Lighting.Ambient = Color3.new(1,1,1)
 		else
-			aa = false
 			Services.Lighting.Brightness = ogBrightness
 			Services.Lighting.Ambient = ogAmbient
+		end
+	end
+	Logic.Disablehaste = function(enable: boolean)
+		if enable then
+			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
+		else
+			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "Haste"
 		end
 	end
 end
@@ -103,6 +103,7 @@ debugNotify("created Window")
 local Tabs = {
 	Main = Window:AddTab("Main", "user"),
 	Visual = Window:AddTab("Visual", "eye"),
+	Floor = Window:AddTab("Floor", "circle-question-mark"),
 	UI_Settings = Window:AddTab("UI Settings", "settings"),
 }
 
@@ -112,6 +113,23 @@ debugNotify("created Tabs")
 -- Tabs.Main
 do
 	local LeftGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
+end
+
+-- Tabs.Floor
+
+do
+	local LeftGroupbox = Tabs.Floor:AddLeftGroupbox("Backdoor", "circle-question-mark")
+	LeftGroupbox:AddToggle("Disable Haste", {
+		Text = "Disable Haste",
+		Default = false,
+		Disabled = false, -- Will disable the toggle (true / false)
+		Visible = true, -- Will make the toggle invisible (true / false)
+		Risky = false, -- Makes the text red (the color can be changed using Obsidian.Scheme.Red) (Default value = false)
+		
+		Callback = function(value: boolean)
+			Logic.Fullbright(value)
+		end,
+	})
 end
 
 -- Tabs.Visual
