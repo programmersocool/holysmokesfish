@@ -127,7 +127,7 @@ do
 		Risky = false, -- Makes the text red (the color can be changed using Obsidian.Scheme.Red) (Default value = false)
 		
 		Callback = function(value: boolean)
-			Logic.Fullbright(value)
+			Logic.Disablehaste(value)
 		end,
 	})
 end
