@@ -17,9 +17,17 @@ local Common = {
 	Remotes = ReplicatedStorage:WaitForChild("RemotesFolder"),
 	GameData = ReplicatedStorage:WaitForChild("GameData"),
 	Current_Room_Name = ReplicatedStorage:WaitForChild("GameData").LatestRoom.Value,
-	room_object = workspace.CurrentRooms:FindFirstChild(ReplicatedStorage:WaitForChild("GameData").LatestRoom.Value)
+	Current_Room = nil
 }
 
+local function updatecurrentroom(newRoomName)
+	if not newRoomName or newRoomName == "" then
+		Common.Current_Room = nil
+		return
+	end
+	local foundRoom = Common.Rooms:FindFirstChild(newRoomName)
+	Common.Current_Room = foundRoom
+end
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
@@ -55,7 +63,7 @@ do
 		if enable then
 			Lighting.Brightness = 3
 			Lighting.Ambient = Color3.new(1,1,1)
-			Common.room_object:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
+			Common.Current_Room:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
 		else
 			Lighting.Brightness = ogBrightness
 			Lighting.Ambient = ogAmbient
@@ -239,7 +247,7 @@ SaveManager:SetSubFolder(SCRIPT_HUB_PLACE)
 SaveManager:BuildConfigSection(Tabs.UI_Settings)
 
 SaveManager:LoadAutoloadConfig()
-
+Common.LatestRoomValue.Changed:Connect(updatecurrentroom)
 debugNotify("initialized SaveManager")
 
 
