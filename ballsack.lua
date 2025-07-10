@@ -9,13 +9,18 @@ local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB
 local Services = {
 	Lighting = game:GetService("Lighting"),
 	Players = game:GetService("Players"),
-	Rooms = game:GetService("Workspace").CurrentRooms,
-	RepStorage = game:GetService("ReplicatedStorage"),
+	Workspace = game:GetService("Workspace"),
+	ReplicatedStorage = game:GetService("ReplicatedStorage"),
+}
+
+local Common = {
+	Rooms = Services.Workspace:WaitForChild("CurrentRooms")
 }
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
-local Obsidian: typeof(require(script:WaitForChild("Obsidian"))) = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+-- Obsidian: typeof(require(script:WaitForChild("Obsidian")))
+local Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
 
 local function debugNotify(text: string)
@@ -36,6 +41,7 @@ debugNotify("loaded libraries")
 
 local Logic = {}
 
+-- Fullbright
 do
 	local ogBrightness = Services.Lighting.Brightness
 	local ogAmbient = Services.Lighting.Ambient
@@ -50,13 +56,14 @@ do
 	end
 end
 
+-- DisableHaste
 do
-	Logic.Disablehaste = function(enable: boolean)
+	local hasteObj = Services.ReplicatedStorage.FloorReplicated.ClientRemote.Haste
+	Logic.DisableHaste = function(enable: boolean)
 		if enable then
-			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
-			print("hi")
+			hasteObj.Name = "disablehaste"
 		else
-			Services.RepStorage.FloorReplicated.ClientRemote.disablehaste.Name = "Haste"
+			hasteObj.Name = "Haste"
 		end
 	end
 end
@@ -115,17 +122,17 @@ debugNotify("created Tabs")
 
 -- Tabs.Main
 do
-	local LeftGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
+	local AntiEntityGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
 end
 
 debugNotify("created Tabs.Main")
 
 
 -- Tabs.Floor
-
 do
-	local LeftGroupbox = Tabs.Floor:AddLeftGroupbox("Backdoor", "circle-question-mark")
-	LeftGroupbox:AddToggle("DisableHaste", {
+	local BackdoorGroupbox = Tabs.Floor:AddLeftGroupbox("Backdoor", "circle-question-mark")
+
+	BackdoorGroupbox:AddToggle("DisableHaste", {
 		Text = "Disable Haste",
 		Default = false,
 
@@ -144,9 +151,9 @@ debugNotify("created Tabs.Floor")
 
 -- Tabs.Visual
 do
-	local LeftGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "[ icon here ]")
+	local LightingGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "[ icon here ]")
 
-	LeftGroupbox:AddToggle("Fullbright", {
+	LightingGroupbox:AddToggle("Fullbright", {
 		Text = "Fullbright",
 		Default = false, -- Default value (true / false)
 
