@@ -39,6 +39,15 @@ local Logic = {}
 do
 	local ogBrightness = Services.Lighting.Brightness
 	local ogAmbient = Services.Lighting.Ambient
+	Logic.Disablehaste = function(enable: boolean)
+		if enable then
+			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
+			print("hi")
+		else
+			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "Haste"
+		end
+	end
+
 
 	Logic.Fullbright = function(enable: boolean)
 		if enable then
@@ -47,14 +56,6 @@ do
 		else
 			Services.Lighting.Brightness = ogBrightness
 			Services.Lighting.Ambient = ogAmbient
-		end
-	end
-	Logic.Disablehaste = function(enable: boolean)
-		if enable then
-			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
-			print("hi")
-		else
-			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "Haste"
 		end
 	end
 end
