@@ -45,8 +45,8 @@ do
 				spawn(function()
 					while aa do
 						Services.Lighting.Brightness = 5
-						Services.Lighting.Ambient = Color3.fromRGB(255,255,255)
-						wait(0.1)
+						Services.Lighting.Ambient = Color3.new(1,1,1)
+						wait(0.01)
 					end
 				end)
 			end
@@ -131,6 +131,8 @@ do
 			Logic.Fullbright(value)
 		end,
 	})
+	
+	
 end
 
 debugNotify("created Tabs.Visual")
