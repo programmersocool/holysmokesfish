@@ -1,6 +1,6 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
 
-local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
+local SCRIPT_HUB_NAME = "bsdabsdbadspoolVDSADVASio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
 local SCRIPT_VERSION = "0.0.1" -- please use semver (https://semver.org/)
@@ -144,7 +144,7 @@ debugNotify("configured Obsidian")
 
 -- Window
 local Window = Obsidian:CreateWindow({
-	Title = "cooliopoolio47 hub",
+	Title = "bsdabsdbadspoolio47 hub",
 	Footer = SCRIPT_ID,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
