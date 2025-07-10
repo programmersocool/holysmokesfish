@@ -64,6 +64,8 @@ do
 			Lighting.Brightness = 3
 			Lighting.Ambient = Color3.new(1,1,1)
 			Common.Current_Room:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
+			print("current room name:" ..Common.Current_Room.Name)
+			print("ah" ..Common.Current_Room)
 		else
 			Lighting.Brightness = ogBrightness
 			Lighting.Ambient = ogAmbient
