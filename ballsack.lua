@@ -52,6 +52,7 @@ do
 	Logic.Disablehaste = function(enable: boolean)
 		if enable then
 			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "disablehaste"
+			print("hi")
 		else
 			Services.RepStorage.FloorReplicated.ClientRemote.Haste.Name = "Haste"
 		end
