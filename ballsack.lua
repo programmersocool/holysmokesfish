@@ -53,6 +53,7 @@ do
 		else
 			if not Logic.fbs.connection then return end
 			Logic.fbs.connection:Disconnect()
+			Logic.fbs.connection = nil
 			Services.Lighting.Brightness = Logic.fbs.ogbr
 			Services.Lighting.Ambient = Logic.fbs.balls
 		end
