@@ -19,8 +19,11 @@ local Common = {
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
-local Obsidian: typeof(require(script:WaitForChild("Obsidian"))) = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
+type Obsidian = typeof(require(script:FindFirstChild("Obsidian")))
+type SaveManager = typeof(require(script:FindFirstChild("SaveManager")))
+
+local Obsidian: Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+local SaveManager: SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
 
 local function debugNotify(text: string)
 	print(SCRIPT_ID .. ": " .. text)
@@ -62,7 +65,7 @@ do
 	Logic.DisableHaste = function(enable: boolean)
 		if enable then
 			hasteObj.Name = "disablehaste"
-			hasteObj2.name = "disablehaste"
+			hasteObj2.Name = "disablehaste"
 		else
 			hasteObj.Name = "Haste"
 			hasteObj2.Name = "Haste"
