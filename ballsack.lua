@@ -63,7 +63,7 @@ do
 		if enable then
 			Lighting.Brightness = 3
 			Lighting.Ambient = Color3.new(1,1,1)
-			Common.Current_Room:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
+			--Common.Current_Room:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
 			print("current room name:" ..Common.Current_Room.Name)
 			print("ah" ..Common.Current_Room)
 		else
@@ -158,7 +158,7 @@ debugNotify("created Tabs.Floor")
 
 -- Tabs.Visual
 do
-	local LightingGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "[ icon here ]")
+	local LightingGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "circle-question-mark")
 
 	LightingGroupbox:AddToggle("Fullbright", {
 		Text = "Fullbright",
@@ -249,9 +249,8 @@ SaveManager:SetSubFolder(SCRIPT_HUB_PLACE)
 SaveManager:BuildConfigSection(Tabs.UI_Settings)
 
 SaveManager:LoadAutoloadConfig()
-Common.LatestRoomValue.Changed:Connect(updatecurrentroom)
 debugNotify("initialized SaveManager")
-
-
+Common.Current_Room_Name.Changed:Connect(updatecurrentroom)
+updatecurrentroom(Common.Current_Room_Name.Value)
 -- Done!
 debugNotify("loading complete!")
