@@ -60,94 +60,94 @@ do
 end
 
 do
-    local connections = {}
-    local highlights = {}
-    local billboards = {}
+	local connections = {}
+	local highlights = {}
+	local billboards = {}
 
-    local function updateDoors()
-        -- Clear previous billboards and highlights
-        for _, billboard in pairs(billboards) do
-            billboard:Destroy()
-        end
-        table.clear(billboards)
+	local function updateDoors()
+		-- Clear previous billboards and highlights
+		for _, billboard in pairs(billboards) do
+			billboard:Destroy()
+		end
+		table.clear(billboards)
 
-        for _, highlight in pairs(highlights) do
-            highlight:Destroy()
-        end
-        table.clear(highlights)
+		for _, highlight in pairs(highlights) do
+			highlight:Destroy()
+		end
+		table.clear(highlights)
 
-        -- Find all doors and add new billboards and highlights
-        for _, model in ipairs(Workspace:GetDescendants()) do
-            if model:IsA("Model") and model.Name == "Door" then
-                for _, part in ipairs(model:GetChildren()) do
-                    if part:IsA("BasePart") and part.Name == "Door" then
-                        -- Add Highlight
-                        local highlight = Instance.new("Highlight")
-                        highlight.Parent = part
-                        highlight.FillColor = Color3.fromRGB(0, 255, 0)
-                        highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
-                        table.insert(highlights, highlight)
+		-- Find all doors and add new billboards and highlights
+		for _, model in ipairs(Workspace:GetDescendants()) do
+			if model:IsA("Model") and model.Name == "Door" then
+				for _, part in ipairs(model:GetChildren()) do
+					if part:IsA("BasePart") and part.Name == "Door" then
+						-- Add Highlight
+						local highlight = Instance.new("Highlight")
+						highlight.Parent = part
+						highlight.FillColor = Color3.fromRGB(0, 255, 0)
+						highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+						table.insert(highlights, highlight)
 
-                        -- Add BillboardGui
-                        local billboardGui = Instance.new("BillboardGui")
-                        billboardGui.Parent = part
-                        billboardGui.Size = UDim2.new(0, 200, 0, 50)
-                        billboardGui.AlwaysOnTop = true
-                        billboardGui.Adornee = part
+						-- Add BillboardGui
+						local billboardGui = Instance.new("BillboardGui")
+						billboardGui.Parent = part
+						billboardGui.Size = UDim2.new(0, 200, 0, 50)
+						billboardGui.AlwaysOnTop = true
+						billboardGui.Adornee = part
 
-                        local textLabel = Instance.new("TextLabel")
-                        textLabel.Parent = billboardGui
-                        textLabel.Size = UDim2.new(1, 0, 1, 0)
-                        textLabel.BackgroundTransparency = 1
-                        textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-                        textLabel.TextScaled = true
+						local textLabel = Instance.new("TextLabel")
+						textLabel.Parent = billboardGui
+						textLabel.Size = UDim2.new(1, 0, 1, 0)
+						textLabel.BackgroundTransparency = 1
+						textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+						textLabel.TextScaled = true
 
-                        local sign = model:FindFirstChild("Sign")
-                        if sign and sign:FindFirstChild("Stinker") then
-                            textLabel.Text = "Door: " .. sign.Stinker.Text
-                        else
-                            textLabel.Text = "Door"
-                        end
-                        table.insert(billboards, billboardGui)
-                    end
-                end
-            end
-        end
-    end
+						local sign = model:FindFirstChild("Sign")
+						if sign and sign:FindFirstChild("Stinker") then
+							textLabel.Text = "Door: " .. sign.Stinker.Text
+						else
+							textLabel.Text = "Door"
+						end
+						table.insert(billboards, billboardGui)
+					end
+				end
+			end
+		end
+	end
 
-    Logic.DoorESP = function(enable: boolean)
-        if enable then
-            if not game:IsLoaded() then
-                game.Loaded:Wait()
-            end
-            -- Initial run
-            updateDoors()
+	Logic.DoorESP = function(enable: boolean)
+		if enable then
+			if not game:IsLoaded() then
+				game.Loaded:Wait()
+			end
+			-- Initial run
+			updateDoors()
 
-            -- Connect to update when new rooms are added
-            local connection = Common.Rooms.ChildAdded:Connect(function()
-                task.wait(1) -- Wait for the new room to fully load
-                updateDoors()
-            end)
-            table.insert(connections, connection)
-        else
-            -- Disconnect all events
-            for _, connection in ipairs(connections) do
-                connection:Disconnect()
-            end
-            table.clear(connections)
+			-- Connect to update when new rooms are added
+			local connection = Common.Rooms.ChildAdded:Connect(function()
+				task.wait(1) -- Wait for the new room to fully load
+				updateDoors()
+			end)
+			table.insert(connections, connection)
+		else
+			-- Disconnect all events
+			for _, connection in ipairs(connections) do
+				connection:Disconnect()
+			end
+			table.clear(connections)
 
-            -- Clear billboards and highlights
-            for _, billboard in pairs(billboards) do
-                billboard:Destroy()
-            end
-            table.clear(billboards)
+			-- Clear billboards and highlights
+			for _, billboard in pairs(billboards) do
+				billboard:Destroy()
+			end
+			table.clear(billboards)
 
-            for _, highlight in pairs(highlights) do
-                highlight:Destroy()
-            end
-            table.clear(highlights)
-        end
-    end
+			for _, highlight in pairs(highlights) do
+				highlight:Destroy()
+			end
+			table.clear(highlights)
+		end
+	end
 end
 debugNotify("initialized Logic")
 
@@ -220,15 +220,15 @@ do
 			Logic.Fullbright(value)
 		end,
 	})
- 
-    local ESPGroupbox = Tabs.Visual:AddLeftGroupbox("ESP", "eye")
-    ESPGroupbox:AddToggle("DoorESP", {
-        Text = "Door ESP",
-        Default = false,
-        Callback = function(value: boolean)
-            Logic.DoorESP(value)
-        end,
-    })
+
+	local ESPGroupbox = Tabs.Visual:AddLeftGroupbox("ESP", "eye")
+	ESPGroupbox:AddToggle("DoorESP", {
+		Text = "Door ESP",
+		Default = false,
+		Callback = function(value: boolean)
+			Logic.DoorESP(value)
+		end,
+	})
 end
 
 debugNotify("created Tabs.Visual")
@@ -305,4 +305,4 @@ debugNotify("initialized SaveManager")
 
 
 -- Done!
-debugNotify("loading complete!")```
+debugNotify("loading complete!")
