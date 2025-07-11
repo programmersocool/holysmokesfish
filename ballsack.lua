@@ -10,6 +10,7 @@ local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 -- Common Objects
 local Common = {
@@ -58,94 +59,95 @@ do
 	end
 end
 
--- Door ESP
 do
-	local espObjects = {}
-	Logic.DoorESP = function(enable: boolean)
-		if enable then
-			-- clean up any existing objects first
-			for _, obj in pairs(espObjects) do
-				if obj and obj.Parent then
-					obj:Destroy()
-				end
-			end
-			table.clear(espObjects)
+    local connections = {}
+    local highlights = {}
+    local billboards = {}
 
-			-- find all doors and apply esp
-			for _, descendant in pairs(Common.Rooms:GetDescendants()) do
-				if descendant:IsA("Part") and descendant.Name == "Door" then
-					local doorPart = descendant
-					local roomModel = doorPart.Parent and doorPart.Parent.Parent
-					
-					-- check if we have a valid room model with a numeric name
-					if roomModel and tonumber(roomModel.Name) then
-						local roomNumber = tonumber(roomModel.Name)
-						local nextRoomNumber = roomNumber + 1
-						
-						-- create highlight
-						local highlight = Instance.new("Highlight")
-						highlight.DepthMode = Enum.DepthMode.AlwaysOnTop
-						highlight.FillTransparency = 1 -- outline only
-						highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
-						highlight.Parent = doorPart
-						table.insert(espObjects, highlight)
+    local function updateDoors()
+        -- Clear previous billboards and highlights
+        for _, billboard in pairs(billboards) do
+            billboard:Destroy()
+        end
+        table.clear(billboards)
 
-						-- create billboard gui
-						local billboardGui = Instance.new("BillboardGui")
-						billboardGui.Adornee = doorPart
-						billboardGui.AlwaysOnTop = true
-						billboardGui.Size = UDim2.new(0, 200, 0, 50)
-						billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-						billboardGui.Parent = doorPart
-						table.insert(espObjects, billboardGui)
+        for _, highlight in pairs(highlights) do
+            highlight:Destroy()
+        end
+        table.clear(highlights)
 
-						local textLabel = Instance.new("TextLabel")
-						textLabel.BackgroundTransparency = 1
-						textLabel.Size = UDim2.new(1, 0, 1, 0)
-						textLabel.Text = "Door " .. tostring(nextRoomNumber)
-						textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-						textLabel.TextScaled = true
-						textLabel.Parent = billboardGui
-					else
-						local roomNumber = tonumber(roomModel.Name)
-						local nextRoomNumber = roomNumber + 1
-						
-						-- create highlight
-						local highlight = Instance.new("Highlight")
-						highlight.DepthMode = Enum.DepthMode.AlwaysOnTop
-						highlight.FillTransparency = 1 -- outline only
-						highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
-						highlight.Parent = doorPart
-						table.insert(espObjects, highlight)
+        -- Find all doors and add new billboards and highlights
+        for _, model in ipairs(Workspace:GetDescendants()) do
+            if model:IsA("Model") and model.Name == "Door" then
+                for _, part in ipairs(model:GetChildren()) do
+                    if part:IsA("BasePart") and part.Name == "Door" then
+                        -- Add Highlight
+                        local highlight = Instance.new("Highlight")
+                        highlight.Parent = part
+                        highlight.FillColor = Color3.fromRGB(0, 255, 0)
+                        highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+                        table.insert(highlights, highlight)
 
-						-- create billboard gui
-						local billboardGui = Instance.new("BillboardGui")
-						billboardGui.Adornee = doorPart
-						billboardGui.AlwaysOnTop = true
-						billboardGui.Size = UDim2.new(0, 200, 0, 50)
-						billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-						billboardGui.Parent = doorPart
-						table.insert(espObjects, billboardGui)
+                        -- Add BillboardGui
+                        local billboardGui = Instance.new("BillboardGui")
+                        billboardGui.Parent = part
+                        billboardGui.Size = UDim2.new(0, 200, 0, 50)
+                        billboardGui.AlwaysOnTop = true
+                        billboardGui.Adornee = part
 
-						local textLabel = Instance.new("TextLabel")
-						textLabel.BackgroundTransparency = 1
-						textLabel.Size = UDim2.new(1, 0, 1, 0)
-						textLabel.Text = "Door " .. tostring(nextRoomNumber)
-						textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-						textLabel.TextScaled = true
-						textLabel.Parent = billboardGui
-				end
-			end
-		else
-			-- cleanup all created esp objects
-			for _, obj in pairs(espObjects) do
-				if obj and obj.Parent then
-					obj:Destroy()
-				end
-			end
-			table.clear(espObjects)
-		end
-	end
+                        local textLabel = Instance.new("TextLabel")
+                        textLabel.Parent = billboardGui
+                        textLabel.Size = UDim2.new(1, 0, 1, 0)
+                        textLabel.BackgroundTransparency = 1
+                        textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                        textLabel.TextScaled = true
+
+                        local sign = model:FindFirstChild("Sign")
+                        if sign and sign:FindFirstChild("Stinker") then
+                            textLabel.Text = "Door: " .. sign.Stinker.Text
+                        else
+                            textLabel.Text = "Door"
+                        end
+                        table.insert(billboards, billboardGui)
+                    end
+                end
+            end
+        end
+    end
+
+    Logic.DoorESP = function(enable: boolean)
+        if enable then
+            if not game:IsLoaded() then
+                game.Loaded:Wait()
+            end
+            -- Initial run
+            updateDoors()
+
+            -- Connect to update when new rooms are added
+            local connection = Common.Rooms.ChildAdded:Connect(function()
+                task.wait(1) -- Wait for the new room to fully load
+                updateDoors()
+            end)
+            table.insert(connections, connection)
+        else
+            -- Disconnect all events
+            for _, connection in ipairs(connections) do
+                connection:Disconnect()
+            end
+            table.clear(connections)
+
+            -- Clear billboards and highlights
+            for _, billboard in pairs(billboards) do
+                billboard:Destroy()
+            end
+            table.clear(billboards)
+
+            for _, highlight in pairs(highlights) do
+                highlight:Destroy()
+            end
+            table.clear(highlights)
+        end
+    end
 end
 debugNotify("initialized Logic")
 
@@ -169,7 +171,6 @@ debugNotify("configured Obsidian")
 local Window = Obsidian:CreateWindow({
 	Title = "cooliopoolio47 hub",
 	Footer = SCRIPT_ID,
-	--Icon = 95816097006870,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
 	Center = true,
@@ -203,13 +204,6 @@ debugNotify("created Tabs.Main")
 do
 	local BackdoorGroupbox = Tabs.Floor:AddLeftGroupbox("Backdoor", "circle-question-mark")
 
-	BackdoorGroupbox:AddToggle("DisableHaste", {
-		Text = "Disable Haste",
-		Default = false,
-		Callback = function(value: boolean)
-			-- Logic.DisableHaste(value) -- you would need to implement this function
-		end,
-	})
 end
 
 debugNotify("created Tabs.Floor")
@@ -217,7 +211,7 @@ debugNotify("created Tabs.Floor")
 
 -- Tabs.Visual
 do
-	local LightingGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "sun")
+	local LightingGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "zap")
 
 	LightingGroupbox:AddToggle("Fullbright", {
 		Text = "Fullbright",
@@ -226,16 +220,15 @@ do
 			Logic.Fullbright(value)
 		end,
 	})
-
-	local EspGroupbox = Tabs.Visual:AddRightGroupbox("ESP", "eye")
-
-	EspGroupbox:AddToggle("DoorESP", {
-		Text = "Door ESP",
-		Default = false,
-		Callback = function(value: boolean)
-			Logic.DoorESP(value)
-		end,
-	})
+ 
+    local ESPGroupbox = Tabs.Visual:AddLeftGroupbox("ESP", "eye")
+    ESPGroupbox:AddToggle("DoorESP", {
+        Text = "Door ESP",
+        Default = false,
+        Callback = function(value: boolean)
+            Logic.DoorESP(value)
+        end,
+    })
 end
 
 debugNotify("created Tabs.Visual")
@@ -264,7 +257,9 @@ do
 	MenuGroup:AddDropdown("NotificationSide", {
 		Values = { "Left", "Right" },
 		Default = "Right",
+
 		Text = "Notification Side",
+
 		Callback = function(value: string)
 			Obsidian:SetNotifySide(value)
 		end,
@@ -273,10 +268,13 @@ do
 	MenuGroup:AddDropdown("DPIDropdown", {
 		Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
 		Default = "100%",
+
 		Text = "DPI Scale",
+
 		Callback = function(value: string)
 			value = value:gsub("%%", "")
 			local DPI: number = tonumber(value)
+
 			Obsidian:SetDPIScale(DPI)
 		end,
 	})
@@ -307,4 +305,4 @@ debugNotify("initialized SaveManager")
 
 
 -- Done!
-debugNotify("loading complete!")
+debugNotify("loading complete!")```
