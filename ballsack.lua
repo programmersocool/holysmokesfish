@@ -1,3 +1,5 @@
+if not game:IsLoaded() then game.Loaded:Wait() end
+
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
@@ -104,7 +106,34 @@ do
 						textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 						textLabel.TextScaled = true
 						textLabel.Parent = billboardGui
-					end
+					else
+						local roomNumber = tonumber(roomModel.Name)
+						local nextRoomNumber = roomNumber + 1
+						
+						-- create highlight
+						local highlight = Instance.new("Highlight")
+						highlight.DepthMode = Enum.DepthMode.AlwaysOnTop
+						highlight.FillTransparency = 1 -- outline only
+						highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
+						highlight.Parent = doorPart
+						table.insert(espObjects, highlight)
+
+						-- create billboard gui
+						local billboardGui = Instance.new("BillboardGui")
+						billboardGui.Adornee = doorPart
+						billboardGui.AlwaysOnTop = true
+						billboardGui.Size = UDim2.new(0, 200, 0, 50)
+						billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+						billboardGui.Parent = doorPart
+						table.insert(espObjects, billboardGui)
+
+						local textLabel = Instance.new("TextLabel")
+						textLabel.BackgroundTransparency = 1
+						textLabel.Size = UDim2.new(1, 0, 1, 0)
+						textLabel.Text = "Door " .. tostring(nextRoomNumber)
+						textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+						textLabel.TextScaled = true
+						textLabel.Parent = billboardGui
 				end
 			end
 		else
