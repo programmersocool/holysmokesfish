@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.1.1" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.1.6" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -85,37 +85,40 @@ end
 do
 	local ogBrightness = Lighting.Brightness
 	local ogAmbient = Lighting.Ambient
-	local originalRoomAmbients = {}
+	local roomData = {}
 	local roomAddedConnection = nil
+	local fullbrightEnabled = false
 
 	local function setRoomFullbright(room)
-		if room:IsA("Model") and not originalRoomAmbients[room] then
-			originalRoomAmbients[room] = room:GetAttribute("Ambient")
+		if room:IsA("Model") and not roomData[room] then
+			local conn = room:GetAttributeChangedSignal("Ambient"):Connect(function()
+				if fullbrightEnabled and room:GetAttribute("Ambient") ~= Color3.new(1, 1, 1) then
+					room:SetAttribute("Ambient", Color3.new(1, 1, 1))
+				end
+			end)
+			roomData[room] = { original = room:GetAttribute("Ambient"), connection = conn }
 			room:SetAttribute("Ambient", Color3.new(1, 1, 1))
 		end
 	end
 
 	Logic.Fullbright = function(enable: boolean)
+		fullbrightEnabled = enable
 		if enable then
 			Lighting.Brightness = 3
 			Lighting.Ambient = Color3.new(1, 1, 1)
-			for _, room in ipairs(Common.Rooms:GetChildren()) do
-				setRoomFullbright(room)
-			end
+			for _, room in ipairs(Common.Rooms:GetChildren()) do setRoomFullbright(room) end
 			roomAddedConnection = Common.Rooms.ChildAdded:Connect(setRoomFullbright)
 		else
 			Lighting.Brightness = ogBrightness
 			Lighting.Ambient = ogAmbient
-			if roomAddedConnection then
-				roomAddedConnection:Disconnect()
-				roomAddedConnection = nil
-			end
-			for room, originalAmbient in pairs(originalRoomAmbients) do
-				if room and room.Parent and originalAmbient then
-					room:SetAttribute("Ambient", originalAmbient)
+			if roomAddedConnection then roomAddedConnection:Disconnect() roomAddedConnection = nil end
+			for room, data in pairs(roomData) do
+				if room and room.Parent then
+					data.connection:Disconnect()
+					if data.original then room:SetAttribute("Ambient", data.original) end
 				end
 			end
-			originalRoomAmbients = {}
+			roomData = {}
 		end
 	end
 end
@@ -147,9 +150,7 @@ do
 
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
-		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
-			doorText = "Door: " .. sign.Stinker.Text
-		end
+		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then doorText = "Door: " .. sign.Stinker.Text end
 
 		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0), StudsOffset = Vector3.new(0, 2.5, 0) })
 		local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function() if not part.CanCollide then cleanupDoor(part) end end)
@@ -158,13 +159,13 @@ do
 
 	Logic.DoorESP = function(enable: boolean)
 		if enable then
-			for _, descendant in ipairs(Workspace:GetDescendants()) do if descendant.Name == "Door" and descendant:IsA("BasePart") then setupDoor(descendant) end end
-			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant) if descendant.Name == "Door" and descendant:IsA("BasePart") then task.wait() setupDoor(descendant) end end)
+			for _, d in ipairs(Workspace:GetDescendants()) do if d.Name == "Door" and d:IsA("BasePart") then setupDoor(d) end end
+			workspaceConnection = Workspace.DescendantAdded:Connect(function(d) if d.Name == "Door" and d:IsA("BasePart") then task.wait() setupDoor(d) end end)
 		else
 			if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end
-			local partsToClean = {}
-			for part in pairs(doorData) do table.insert(partsToClean, part) end
-			for _, part in ipairs(partsToClean) do cleanupDoor(part) end
+			local toClean = {}
+			for p in pairs(doorData) do table.insert(toClean, p) end
+			for _, p in ipairs(toClean) do cleanupDoor(p) end
 		end
 	end
 end
@@ -201,18 +202,18 @@ do
 
 	Logic.MonsterESP = function(enable: boolean)
 		if enable then
-			for _, descendant in ipairs(Workspace:GetDescendants()) do if descendant.Name == "RushNew" and descendant:IsA("BasePart") then setupMonster(descendant) end end
-			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant) if descendant.Name == "RushNew" and descendant:IsA("BasePart") then task.wait() setupMonster(descendant) end end)
+			for _, d in ipairs(Workspace:GetDescendants()) do if d.Name == "RushNew" and d:IsA("BasePart") then setupMonster(d) end end
+			workspaceConnection = Workspace.DescendantAdded:Connect(function(d) if d.Name == "RushNew" and d:IsA("BasePart") then task.wait() setupMonster(d) end end)
 		else
 			if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end
-			local partsToClean = {}
-			for part in pairs(monsterData) do table.insert(partsToClean, part) end
-			for _, part in ipairs(partsToClean) do cleanupMonster(part) end
+			local toClean = {}
+			for p in pairs(monsterData) do table.insert(toClean, p) end
+			for _, p in ipairs(toClean) do cleanupMonster(p) end
 		end
 	end
 end
 
--- Generic Model ESP Factory (for Items, Drops, Hiding)
+-- Generic Model ESP Factory
 do
 	local function CreateModelESPLogic(targetFolder: Instance, itemsToTrack: table)
 		local trackedData = {}
@@ -220,7 +221,7 @@ do
 
 		local function cleanup(model)
 			if trackedData[model] then
-				for _, h in ipairs(trackedData[model].highlights) do if h and h.Parent then h:Destroy() end end
+				if trackedData[model].highlight and trackedData[model].highlight.Parent then trackedData[model].highlight:Destroy() end
 				if trackedData[model].billboard and trackedData[model].billboard.Parent then trackedData[model].billboard:Destroy() end
 				if trackedData[model].connection then trackedData[model].connection:Disconnect() end
 				trackedData[model] = nil
@@ -233,26 +234,25 @@ do
 			local itemConfig = itemsToTrack[model.Name]
 			if not itemConfig then return end
 
-			local highlights, firstPart = {}, nil
-			for _, d in ipairs(model:GetDescendants()) do
-				if d:IsA("BasePart") then
-					if not firstPart then firstPart = d end
-					local h = Instance.new("Highlight")
-					h.Parent, h.FillColor, h.OutlineColor, h.DepthMode = d, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop
-					table.insert(highlights, h)
-				end
-			end
+			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
+			if not firstPart then return end
 
-			if #highlights == 0 then return end
+			local highlight = Instance.new("Highlight")
+			highlight.Parent = model
+			highlight.FillColor = itemConfig.Color
+			highlight.OutlineColor = itemConfig.Color
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
 			local adornee = model.PrimaryPart or firstPart
-			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = model.Name, TextColor = itemConfig.Color })
+			local espText = itemConfig.Text or model.Name
+			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
 			local conn = model.AncestryChanged:Connect(function(_, p) if p == nil or not model:IsDescendantOf(targetFolder) then cleanup(model) end end)
-			trackedData[model] = { highlights = highlights, billboard = gui, connection = conn }
+			trackedData[model] = { highlight = highlight, billboard = gui, connection = conn }
 		end
 
 		return function(enable: boolean)
 			if enable then
-				for _, d in ipairs(targetFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then setup(d) end end
+				for _, d in ipairs(targetFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then task.spawn(setup, d) end end
 				connection = targetFolder.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then task.wait() setup(d) end end)
 			else
 				if connection then connection:Disconnect() connection = nil end
@@ -269,26 +269,95 @@ do
 		["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) },
 		["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) },
 		["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) },
+		["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) },
+		["Candle"] = { Color = Color3.fromRGB(255, 250, 205) },
+		["Battery"] = { Color = Color3.fromRGB(50, 205, 50) },
+		["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" },
+		["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" },
+		["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) },
 	}
-	local hidingSpots = {
-		["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) },
-		["Locker"] = { Color = Color3.fromRGB(0, 150, 255) },
-	}
+	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
+	local books = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" } }
+	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
 
 	Logic.ItemESP = CreateModelESPLogic(Common.Rooms, items)
 	Logic.DropsESP = CreateModelESPLogic(Common.Drops, items)
 	Logic.HidingESP = CreateModelESPLogic(Workspace, hidingSpots)
+	Logic.BookESP = CreateModelESPLogic(Common.Rooms, books)
+	Logic.LeverESP = CreateModelESPLogic(Workspace, levers)
 end
 
 -- Anti-Screech
 do
 	Logic.AntiScreech = function(enable: boolean)
+		local remote = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech")
+		if remote then remote.Name = enable and "notscreech" or "Screech" end
+	end
+end
+
+-- Speed
+do
+	local player = Players.LocalPlayer
+	local originalSpeed = 16
+	local speedEnabled = false
+	local currentSpeed = 16
+	local speedConnection = nil
+
+	local function updateSpeed()
+		local char = player.Character
+		if not char then return end
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if not hum then return end
+		hum.WalkSpeed = speedEnabled and currentSpeed or originalSpeed
+	end
+
+	local function onCharacter(char)
+		local hum = char:WaitForChild("Humanoid")
+		originalSpeed = hum.WalkSpeed
+		if speedConnection then speedConnection:Disconnect() end
+		speedConnection = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+			if speedEnabled and hum.WalkSpeed ~= currentSpeed then
+				hum.WalkSpeed = currentSpeed
+			end
+		end)
+		task.wait(0.1)
+		updateSpeed()
+	end
+
+	player.CharacterAdded:Connect(onCharacter)
+	if player.Character then onCharacter(player.Character) end
+
+	Logic.SetSpeed = function(enable: boolean) speedEnabled = enable updateSpeed() end
+	Logic.SetSpeedValue = function(value: number) currentSpeed = value if speedEnabled then updateSpeed() end end
+end
+
+-- Instant Proximity Prompts
+do
+	local promptData = {}
+	local workspaceConnection = nil
+
+	local function cleanupPrompt(prompt)
+		if promptData[prompt] and prompt and prompt.Parent then
+			prompt.HoldDuration = promptData[prompt].originalDuration
+			promptData[prompt] = nil
+		end
+	end
+
+	local function setupPrompt(prompt)
+		if not prompt or not prompt:IsA("ProximityPrompt") or promptData[prompt] then return end
+		promptData[prompt] = { originalDuration = prompt.HoldDuration }
+		prompt.HoldDuration = 0
+	end
+
+	Logic.InstantPrompts = function(enable: boolean)
 		if enable then
-			local remote = Common.RemotesFolder:FindFirstChild("Screech")
-			if remote then remote.Name = "notscreech" end
+			for _, d in ipairs(Workspace:GetDescendants()) do if d:IsA("ProximityPrompt") then setupPrompt(d) end end
+			workspaceConnection = Workspace.DescendantAdded:Connect(function(d) if d:IsA("ProximityPrompt") then setupPrompt(d) end end)
 		else
-			local remote = Common.RemotesFolder:FindFirstChild("notscreech")
-			if remote then remote.Name = "Screech" end
+			if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end
+			local toClean = {}
+			for p in pairs(promptData) do table.insert(toClean, p) end
+			for _, p in ipairs(toClean) do cleanupPrompt(p) end
 		end
 	end
 end
@@ -322,6 +391,11 @@ debugNotify("created Tabs")
 do
 	local AntiEntityGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
 	AntiEntityGroupbox:AddToggle("AntiScreech", { Text = "Anti-Screech", Default = false, Callback = function(v) Logic.AntiScreech(v) end })
+
+	local PlayerGroupbox = Tabs.Main:AddLeftGroupbox("Player", "user")
+	PlayerGroupbox:AddToggle("EnableSpeed", { Text = "Enable Speed", Default = false, Callback = function(v) Logic.SetSpeed(v) end })
+	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v) Logic.SetSpeedValue(v) end })
+	PlayerGroupbox:AddToggle("InstantPrompts", { Text = "Instant Prompts", Default = false, Callback = function(v) Logic.InstantPrompts(v) end })
 end
 debugNotify("created Tabs.Main")
 
@@ -344,6 +418,8 @@ do
 	ESPGroupbox:AddToggle("ItemESP", { Text = "Item ESP", Default = false, Callback = function(v) Logic.ItemESP(v) end })
 	ESPGroupbox:AddToggle("DropsESP", { Text = "Drops ESP", Default = false, Callback = function(v) Logic.DropsESP(v) end })
 	ESPGroupbox:AddToggle("HidingESP", { Text = "Hiding Spot ESP", Default = false, Callback = function(v) Logic.HidingESP(v) end })
+	ESPGroupbox:AddToggle("BookESP", { Text = "Book ESP", Default = false, Callback = function(v) Logic.BookESP(v) end })
+	ESPGroupbox:AddToggle("LeverESP", { Text = "Lever ESP", Default = false, Callback = function(v) Logic.LeverESP(v) end })
 end
 debugNotify("created Tabs.Visual")
 
