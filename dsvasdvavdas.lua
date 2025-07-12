@@ -16,6 +16,10 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local PathfindingService = game:GetService("PathfindingService")
+local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
+local Debris = game:GetService("Debris") -- needed for cleaning up path visuals
 
 -- thingyyyy
 local Signal = {}
@@ -85,6 +89,214 @@ debugNotify("loaded libraries")
 local Logic = {}
 local ActiveESPs = {}
 local TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+
+-- This code goes inside the large "do...end" block that starts with Logic.AntiScreech
+-- Replace the previous AutoHiding code with this.
+
+local autoHidingActive = false
+local hideConnection = nil
+local AUTO_HIDE_ACTION_NAME = "AutoHidingControlLock"
+local pathVisuals = {} -- To store path visualization parts
+
+-- Function to visualize the path
+local function visualizePath(waypoints)
+	-- Clean up previous visualization
+	for _, part in ipairs(pathVisuals) do
+		if part then part:Destroy() end
+	end
+	table.clear(pathVisuals)
+
+	for i, waypoint in ipairs(waypoints) do
+		if i > 1 then -- Skip the starting point
+			local part = Instance.new("Part")
+			part.Shape = Enum.PartType.Ball
+			part.Material = Enum.Material.Neon
+			part.Size = Vector3.new(0.8, 0.8, 0.8)
+			part.Position = waypoint.Position + Vector3.new(0, 1, 0)
+			part.Anchored = true
+			part.CanCollide = false
+			part.Color = Color3.fromRGB(0, 255, 100)
+			part.Parent = Workspace
+			table.insert(pathVisuals, part)
+			-- Debris:AddItem(part, 5) -- Optional: Automatically remove after 5 seconds
+		end
+	end
+end
+
+-- Disables player movement input
+local function disablePlayerControls()
+	ContextActionService:BindAction(AUTO_HIDE_ACTION_NAME, function()
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.PlayerActions.CharacterForward, Enum.PlayerActions.CharacterBackward, Enum.PlayerActions.CharacterLeft, Enum.PlayerActions.CharacterRight)
+end
+
+-- Re-enables player movement input
+local function enablePlayerControls()
+	ContextActionService:UnbindAction(AUTO_HIDE_ACTION_NAME)
+end
+
+local function findAndEnterHidingSpot()
+	if autoHidingActive then return end
+
+	local player = Players.LocalPlayer
+	local char = player.Character
+	if not (char and char.PrimaryPart) then return end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
+
+	autoHidingActive = true
+	disablePlayerControls()
+	debugNotify("Auto-hiding initiated. Press SPACE to cancel.")
+
+	local spacebarConnection
+
+	local function endAutoHideSequence()
+		if spacebarConnection then
+			spacebarConnection:Disconnect()
+			spacebarConnection = nil
+		end
+		-- Clean up visuals when sequence ends
+		for _, part in ipairs(pathVisuals) do
+			if part then part:Destroy() end
+		end
+		table.clear(pathVisuals)
+
+		enablePlayerControls()
+		autoHidingActive = false
+		if humanoid and humanoid.Parent then
+			humanoid:MoveTo(humanoid.RootPart.Position) -- Stop movement
+		end
+	end
+
+	spacebarConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.KeyCode == Enum.KeyCode.Space then
+			debugNotify("Auto-hide cancelled by player!")
+			endAutoHideSequence()
+		end
+	end)
+
+	-- 1. Find Closest Hiding Spot
+	local playerPos = char.PrimaryPart.Position
+	local closestSpot, closestDist, closestPrompt = nil, math.huge, nil
+
+	for i = Common.CurrentRoom, Common.CurrentRoom + 1 do
+		local room = Common.Rooms:FindFirstChild(tostring(i))
+		if room then
+			for _, descendant in ipairs(room:GetDescendants()) do
+				if (descendant.Name == "Wardrobe" or descendant.Name == "Locker") and descendant:IsA("Model") then
+					local prompt = descendant:FindFirstChildWhichIsA("ProximityPrompt")
+					local pivot = descendant:GetPivot()
+					if prompt and pivot then
+						local dist = (playerPos - pivot.Position).Magnitude
+						if dist < closestDist then
+							closestDist, closestSpot, closestPrompt = dist, descendant, prompt
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if not closestSpot then
+		debugNotify("Could not find a hiding spot!")
+		endAutoHideSequence()
+		return
+	end
+
+	-- 2. Pathfinding
+	local path = PathfindingService:CreatePath({ AgentRadius = 3, AgentHeight = 6, AgentCanJump = true })
+	local success, errorMessage = pcall(function()
+		path:ComputeAsync(playerPos, closestSpot:GetPivot().Position)
+	end)
+
+	if success and path.Status == Enum.PathStatus.Success then
+		local waypoints = path:GetWaypoints()
+		visualizePath(waypoints)
+
+		-- 3. Traverse Waypoints
+		for i = 2, #waypoints do
+			if not autoHidingActive then break end -- Exit if cancelled
+
+			local waypoint = waypoints[i]
+
+			-- Handle jumping if necessary
+			if waypoint.Action == Enum.PathWaypointAction.Jump then
+				humanoid.Jump = true
+			end
+
+			humanoid:MoveTo(waypoint.Position)
+
+			-- Wait until waypoint reached or timeout occurs
+			local reached = false
+			local timeout = tick() + 2.5 -- Max 2.5 seconds per waypoint
+
+			while not reached and autoHidingActive and tick() < timeout do
+				-- Wait briefly for MoveToFinished, check cancellation status constantly
+				reached = humanoid.MoveToFinished:Wait(0.1)
+			end
+
+			-- If we timed out while still trying to autohide, assume stuck and stop
+			if not reached and autoHidingActive then
+				debugNotify("Pathfinding stuck or blocked. Stopping movement.")
+				break
+			end
+		end
+
+		-- 4. Interact (Final step)
+		if autoHidingActive then
+			-- Ensure we are close enough before interacting
+			if (char.PrimaryPart.Position - closestSpot:GetPivot().Position).Magnitude < 12 then
+				closestPrompt:InputHoldBegin()
+				task.wait(0.1)
+				closestPrompt:InputHoldEnd()
+				debugNotify("Safely hidden!")
+			else
+				debugNotify("Arrived at spot, but too far to interact.")
+			end
+		end
+	else
+		debugNotify("Pathfinding failed: No path found.")
+	end
+
+	-- Always clean up at the end
+	endAutoHideSequence()
+end
+
+
+local function onMonsterAdded(entity)
+	if autoHidingActive then return end
+	-- Check if the toggle is enabled in the UI before running
+	if Obsidian.Options.AutoHiding.Value == true then
+		if entity.Name == "RushMoving" or entity.Name == "AmbushMoving" then
+			task.spawn(findAndEnterHidingSpot)
+		end
+	end
+end
+
+Logic.SetAutoHiding = function(enable)
+	if enable then
+		if not hideConnection then
+			-- Connect to Workspace.ChildAdded to detect monsters spawning
+			hideConnection = Workspace.ChildAdded:Connect(onMonsterAdded)
+		end
+	else
+		if hideConnection then
+			hideConnection:Disconnect()
+			hideConnection = nil
+		end
+		-- Ensure controls are returned if disabled while active
+		if autoHidingActive then
+			enablePlayerControls()
+			autoHidingActive = false
+			-- Also clear any leftover path visuals if disabled manually
+			for _, part in ipairs(pathVisuals) do
+				if part then part:Destroy() end
+			end
+			table.clear(pathVisuals)
+		end
+	end
+end
 
 -- fade-in/out effects for esp elements
 local function tweenInstance(instance, out)
@@ -763,6 +975,12 @@ do
 	PlayerGroupbox:AddToggle("Twerk", { Text = "Twerk", Default = false, Callback = function(v)
 		Logic.Twerk(v)
 	end })
+	PlayerGroupbox:AddToggle("AutoHiding", {
+ 		Text = "Auto-Hiding",
+    		Default = false,
+    		Callback = function(v)
+        	Logic.SetAutoHiding(v)
+    	end})
 	PlayerGroupbox:AddToggle("AutoInteract", { Text = "Auto Interact", Default = false, Callback = function(v)
 		Logic.SetAutoInteract(v)
 	end })
