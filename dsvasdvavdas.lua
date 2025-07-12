@@ -522,6 +522,49 @@ do
 			end
 		end
 	end
+	local clipData, clipConns = {}, {}
+	local function cleanupClip(p)
+		if clipData[p] and p and p.Parent then
+			p.RequiresLineOfSight = clipData[p].originalLineOfSight
+			clipData[p] = nil
+		end
+	end
+	local function setupClip(p)
+		if not p or not p:IsA("ProximityPrompt") or clipData[p] then
+			return
+		end
+		clipData[p] = { originalLineOfSight = p.RequiresLineOfSight }
+		p.RequiresLineOfSight = false
+	end
+	Logic.ClipPrompts = function(enable: boolean)
+		if enable then
+			for _, container in ipairs({ Common.Rooms, Common.Drops }) do
+				for _, d in ipairs(container:GetDescendants()) do
+					if d:IsA("ProximityPrompt") then
+						setupClip(d)
+					end
+				end
+				local conn = container.DescendantAdded:Connect(function(d)
+					if d:IsA("ProximityPrompt") then
+						setupClip(d)
+					end
+				end)
+				table.insert(clipConns, conn)
+			end
+		else
+			for _, conn in ipairs(clipConns) do
+				conn:Disconnect()
+			end
+			clipConns = {}
+			local toClean = {}
+			for p in pairs(clipData) do
+				table.insert(toClean, p)
+			end
+			for _, p in ipairs(toClean) do
+				cleanupClip(p)
+			end
+		end
+	end
 	local originalFOV = workspace.CurrentCamera.FieldOfView
 	Logic.SetFOV = function(v)
 		workspace.CurrentCamera.FieldOfView = v
@@ -627,6 +670,9 @@ do
 	end })
 	PlayerGroupbox:AddToggle("InstantPrompts", { Text = "Instant Prompts", Default = false, Callback = function(v)
 		Logic.InstantPrompts(v)
+	end })
+	PlayerGroupbox:AddToggle("ClipPrompts", { Text = "Clip Prompts", Default = false, Callback = function(v)
+		Logic.ClipPrompts(v)
 	end })
 	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v)
 		Logic.SetFOV(v)
