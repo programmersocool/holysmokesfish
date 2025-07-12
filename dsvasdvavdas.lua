@@ -5,7 +5,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.7.1" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "6.7.2" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -443,7 +443,7 @@ do
 	local originalSpeed, speedEnabled, currentSpeed, speedConn = 16, false, 16, nil
 	local twerkEnabled, twerkAnimTrack = false, nil
 	local TWERK_ANIM_ID = "rbxassetid://12874447851"
-	local autoInteractEnabled, autoInteractTarget = false, "Gold"
+	local autoInteractEnabled, autoInteractTarget, autoInteractConn = false, "Gold", nil
 
 	local function stopTwerk()
 		if twerkAnimTrack then
@@ -579,42 +579,36 @@ do
 	end
 
 	local allItemNames = { ["KeyObtain"] = true, ["Lighter"] = true, ["Flashlight"] = true, ["Vitamins"] = true, ["Bandage"] = true, ["Lockpicks"] = true, ["Candle"] = true, ["Battery"] = true, ["SkeletonKey"] = true, ["Crucifix"] = true, ["Smoothie"] = true, ["GoldPile"] = true }
-	local function autoInteractLoop()
-		while autoInteractEnabled do
-			local char = player.Character
-			if char and char.PrimaryPart then
-				for _, container in ipairs({ Common.Rooms, Common.Drops }) do
-					for _, prompt in ipairs(container:GetDescendants()) do
-						if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-							local model = prompt.Parent
-							if model:IsA("Model") then
-								local modelName = model.Name
-								local shouldTrigger = false
-								if autoInteractTarget == "All Items" then
-									if allItemNames[modelName] then shouldTrigger = true end
-								elseif autoInteractTarget == "Keys" then
-									if modelName == "KeyObtain" or modelName == "SkeletonKey" then shouldTrigger = true end
-								elseif autoInteractTarget == "Gold" then
-									if modelName == "GoldPile" then shouldTrigger = true end
-								end
-								if shouldTrigger then
-									local dist = (char.PrimaryPart.Position - prompt.Parent.Position).Magnitude
-									if dist <= prompt.MaxActivationDistance then
-										ProximityPromptService:PromptTriggered(prompt)
-										task.wait(0.1)
-									end
-								end
-							end
-						end
-					end
-				end
-			end
-			task.wait()
+	local function onPromptShown(prompt)
+		if not (prompt and prompt.Parent and prompt.Parent:IsA("Model")) then return end
+
+		local modelName = prompt.Parent.Name
+		local shouldTrigger = false
+
+		if autoInteractTarget == "All Items" then
+			if allItemNames[modelName] then shouldTrigger = true end
+		elseif autoInteractTarget == "Keys" then
+			if modelName == "KeyObtain" or modelName == "SkeletonKey" then shouldTrigger = true end
+		elseif autoInteractTarget == "Gold" then
+			if modelName == "GoldPile" then shouldTrigger = true end
+		end
+
+		if shouldTrigger then
+			ProximityPromptService:PromptTriggered(prompt)
 		end
 	end
 	Logic.SetAutoInteract = function(enable)
 		autoInteractEnabled = enable
-		if enable then task.spawn(autoInteractLoop) end
+		if enable then
+			if not autoInteractConn then
+				autoInteractConn = ProximityPromptService.PromptShown:Connect(onPromptShown)
+			end
+		else
+			if autoInteractConn then
+				autoInteractConn:Disconnect()
+				autoInteractConn = nil
+			end
+		end
 	end
 	Logic.SetAutoInteractTarget = function(target)
 		autoInteractTarget = target
