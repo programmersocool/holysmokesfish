@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.5" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.6" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -266,50 +266,66 @@ end
 
 -- Item ESP
 do
-	-- easy to add new items here
+	-- easy to add new item models here
 	local itemsToTrack = {
 		["Key"] = { Color = Color3.fromRGB(255, 255, 0) },
+		-- ["Chest"] = { Color = Color3.fromRGB(170, 85, 0) }
 	}
 
 	local itemData = {}
 	local workspaceConnection = nil
 
-	local function cleanupItem(part)
-		if itemData[part] then
-			if itemData[part].highlight then itemData[part].highlight:Destroy() end
-			if itemData[part].billboard then itemData[part].billboard:Destroy() end
-			if itemData[part].connection then itemData[part].connection:Disconnect() end
-			itemData[part] = nil
+	local function cleanupItem(model)
+		if itemData[model] then
+			for _, highlight in ipairs(itemData[model].highlights) do
+				if highlight and highlight.Parent then highlight:Destroy() end
+			end
+			if itemData[model].billboard and itemData[model].billboard.Parent then itemData[model].billboard:Destroy() end
+			if itemData[model].connection then itemData[model].connection:Disconnect() end
+			itemData[model] = nil
 		end
 	end
 
-	local function setupItem(part)
-		if not part or not part:IsA("BasePart") or itemData[part] then return end
+	local function setupItem(model)
+		if not model or not model:IsA("Model") or itemData[model] then return end
 
-		local itemConfig = itemsToTrack[part.Name]
+		local itemConfig = itemsToTrack[model.Name]
 		if not itemConfig then return end
 
-		local highlight = Instance.new("Highlight")
-		highlight.Parent = part
-		highlight.FillColor = itemConfig.Color
-		highlight.OutlineColor = itemConfig.Color
-		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		local highlights = {}
+		local firstPart = nil
 
+		for _, descendant in ipairs(model:GetDescendants()) do
+			if descendant:IsA("BasePart") then
+				if not firstPart then firstPart = descendant end
+
+				local highlight = Instance.new("Highlight")
+				highlight.Parent = descendant
+				highlight.FillColor = itemConfig.Color
+				highlight.OutlineColor = itemConfig.Color
+				highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				table.insert(highlights, highlight)
+			end
+		end
+
+		if #highlights == 0 then return end
+
+		local adorneePart = model.PrimaryPart or firstPart
 		local billboardGui = CreateBillboardGui({
-			Parent = part,
-			Adornee = part,
-			Text = part.Name,
+			Parent = adorneePart,
+			Adornee = adorneePart,
+			Text = model.Name,
 			TextColor = itemConfig.Color
 		})
 
-		local connection = part.AncestryChanged:Connect(function(_, parent)
+		local connection = model.AncestryChanged:Connect(function(_, parent)
 			if parent == nil then
-				cleanupItem(part)
+				cleanupItem(model)
 			end
 		end)
 
-		itemData[part] = {
-			highlight = highlight,
+		itemData[model] = {
+			highlights = highlights,
 			billboard = billboardGui,
 			connection = connection
 		}
@@ -318,13 +334,13 @@ do
 	Logic.ItemESP = function(enable: boolean)
 		if enable then
 			for _, descendant in ipairs(Workspace:GetDescendants()) do
-				if itemsToTrack[descendant.Name] and descendant:IsA("BasePart") then
+				if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
 					setupItem(descendant)
 				end
 			end
 
 			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
-				if itemsToTrack[descendant.Name] and descendant:IsA("BasePart") then
+				if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
 					task.wait()
 					setupItem(descendant)
 				end
@@ -335,12 +351,12 @@ do
 				workspaceConnection = nil
 			end
 
-			local partsToClean = {}
-			for part in pairs(itemData) do
-				table.insert(partsToClean, part)
+			local modelsToClean = {}
+			for model in pairs(itemData) do
+				table.insert(modelsToClean, model)
 			end
-			for _, part in ipairs(partsToClean) do
-				cleanupItem(part)
+			for _, model in ipairs(modelsToClean) do
+				cleanupItem(model)
 			end
 		end
 	end
