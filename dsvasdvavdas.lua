@@ -300,9 +300,9 @@ do
 				monsterText = "Rush"
 			end
 			highlightPart.Transparency = 0
-		elseif entity:IsA("Model") and entity.Name == "Lookman" then
-			highlightPart = entity
-			adorneePart = entity:FindFirstChildWhichIsA("BasePart")
+		elseif entity:IsA("Model") and entity.Name == "Eyes" then
+			highlightPart = entity.Core
+			adorneePart = entity.Core
 			monsterText = "Eyes"
 		end
 
