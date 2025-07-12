@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.6" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.7" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -55,7 +55,7 @@ local function CreateBillboardGui(options: {
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Size = UDim2.new(0, 200, 0, 50)
 	billboardGui.AlwaysOnTop = true
-	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 2.5, 0) -- default offset
+	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0) -- default offset is now zero
 	billboardGui.Adornee = options.Adornee
 	billboardGui.Parent = options.Parent
 
@@ -127,7 +127,8 @@ do
 			Parent = part,
 			Adornee = part,
 			Text = doorText,
-			TextColor = Color3.fromRGB(0, 255, 0)
+			TextColor = Color3.fromRGB(0, 255, 0),
+			StudsOffset = Vector3.new(0, 2.5, 0) -- specific offset for doors
 		})
 
 		local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
@@ -215,8 +216,8 @@ do
 			Parent = part,
 			Adornee = part,
 			Text = monsterText,
-			TextColor = Color3.fromRGB(255, 0, 0),
-			StudsOffset = Vector3.new(0, 0, 0) -- no height offset
+			TextColor = Color3.fromRGB(255, 0, 0)
+			-- no offset needed, will use the new default of zero
 		})
 
 		-- connection to clean up when monster is removed
@@ -266,8 +267,10 @@ end
 
 -- Item ESP
 do
+	-- easy to add new item models here
 	local itemsToTrack = {
-		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
+		["Key"] = { Color = Color3.fromRGB(255, 255, 0) },
+		-- ["Chest"] = { Color = Color3.fromRGB(170, 85, 0) }
 	}
 
 	local itemData = {}
