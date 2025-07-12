@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.7" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.8" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -108,21 +108,18 @@ do
 		local model = part.Parent
 		if not (model:IsA("Model") and model.Name == "Door") then return end
 
-		-- door esp highlight
 		local highlight = Instance.new("Highlight")
 		highlight.Parent = part
 		highlight.FillColor = Color3.fromRGB(0, 255, 0)
 		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-		-- determine door text
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
 			doorText = "Door: " .. sign.Stinker.Text
 		end
 
-		-- door esp billboard gui using the new function
 		local billboardGui = CreateBillboardGui({
 			Parent = part,
 			Adornee = part,
@@ -136,6 +133,7 @@ do
 				cleanupDoor(part)
 			end
 		end)
+
 		doorData[part] = {
 			highlight = highlight,
 			billboard = billboardGui,
@@ -194,9 +192,8 @@ do
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
 
-		part.Transparency = 0 -- set transparency
+		part.Transparency = 0
 
-		-- determine monster text based on parent name
 		local monsterText = "I dont know dude"
 		if part.Parent.Name == "AmbushMoving" then
 			monsterText = "Ambush"
@@ -204,23 +201,19 @@ do
 			monsterText = "Rush"
 		end
 
-		-- monster esp highlight
 		local highlight = Instance.new("Highlight")
 		highlight.Parent = part
 		highlight.FillColor = Color3.fromRGB(255, 0, 0)
 		highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-		-- monster esp billboard gui
 		local billboardGui = CreateBillboardGui({
 			Parent = part,
 			Adornee = part,
 			Text = monsterText,
 			TextColor = Color3.fromRGB(255, 0, 0)
-			-- no offset needed, will use the new default of zero
 		})
 
-		-- connection to clean up when monster is removed
 		local connection = part.AncestryChanged:Connect(function(_, parent)
 			if parent == nil then
 				cleanupMonster(part)
@@ -244,7 +237,7 @@ do
 
 			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
 				if descendant.Name == "RushNew" and descendant:IsA("BasePart") then
-					task.wait() -- wait a frame to ensure it's fully initialized
+					task.wait()
 					setupMonster(descendant)
 				end
 			end)
@@ -269,7 +262,7 @@ end
 do
 	-- easy to add new item models here
 	local itemsToTrack = {
-		["Key"] = { Color = Color3.fromRGB(255, 255, 0) },
+		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
 		-- ["Chest"] = { Color = Color3.fromRGB(170, 85, 0) }
 	}
 
