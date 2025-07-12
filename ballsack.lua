@@ -16,7 +16,7 @@ local Workspace = game:GetService("Workspace")
 local Common = {
 	Rooms = workspace:WaitForChild("CurrentRooms"),
 	Drops = workspace:WaitForChild("Drops"),
-	RemotesFolder = ReplicatedStorage:WaitForChild("Remotes"),
+	RemotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder"),
 	GameData = ReplicatedStorage:WaitForChild("GameData")
 }
 -- helper function to get the current room model
