@@ -5,7 +5,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.7.2" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "6.7.3" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -660,14 +660,21 @@ task.spawn(function()
 	Workspace.DescendantAdded:Connect(setupTrackerDoor)
 	RunService.RenderStepped:Connect(function()
 		local playerChar = Players.LocalPlayer.Character
-		if not playerChar or not playerChar.PrimaryPart then
-			return
-		end
+		if not playerChar or not playerChar.PrimaryPart then return end
 		local playerPos = playerChar.PrimaryPart.Position
-		for _, esp in pairs(ActiveESPs) do
+		for espKey, esp in pairs(ActiveESPs) do
 			if esp.adornee and esp.adornee.Parent then
-				local dist = math.round((playerPos - esp.adornee.Position).Magnitude)
-				esp.distanceLabel.Text = "[" .. dist .. " studs]"
+				local adorneePos
+				if esp.adornee:IsA("BasePart") then
+					adorneePos = esp.adornee.Position
+				elseif esp.adornee:IsA("Model") then
+					adorneePos = esp.adornee:GetPivot().Position
+				end
+
+				if adorneePos then
+					local dist = math.round((playerPos - adorneePos).Magnitude)
+					esp.distanceLabel.Text = "[" .. dist .. " studs]"
+				end
 			end
 		end
 	end)
