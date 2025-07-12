@@ -193,7 +193,7 @@ do
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
 
-		part.Transparency = 0.95 -- set transparency
+		part.Transparency = 0 
 
 		-- determine monster text based on parent name
 		local monsterText = "I dont know dude"
@@ -215,8 +215,7 @@ do
 			Parent = part,
 			Adornee = part,
 			Text = monsterText,
-			TextColor = Color3.fromRGB(255, 0, 0),
-			StudsOffset = Vector3.new(0, 5, 0) -- a bit higher for the monster
+			TextColor = Color3.fromRGB(255, 0, 0)
 		})
 
 		-- connection to clean up when monster is removed
