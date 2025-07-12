@@ -1,11 +1,9 @@
--- recoder-ai/cheeky
-
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.3" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.4" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -182,6 +180,9 @@ do
 
 	local function cleanupMonster(part)
 		if monsterData[part] then
+			if part and part.Parent then
+				part.Transparency = 1 -- restore transparency
+			end
 			if monsterData[part].highlight then monsterData[part].highlight:Destroy() end
 			if monsterData[part].billboard then monsterData[part].billboard:Destroy() end
 			if monsterData[part].connection then monsterData[part].connection:Disconnect() end
@@ -191,6 +192,8 @@ do
 
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
+
+		part.Transparency = 0.95 -- set transparency
 
 		-- determine monster text based on parent name
 		local monsterText = "I dont know dude"
