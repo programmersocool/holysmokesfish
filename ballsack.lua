@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.0" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.1" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -11,6 +11,7 @@ local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 
 -- Custom Signal for events
 local Signal = {}
@@ -79,6 +80,29 @@ debugNotify("loaded libraries")
 
 local Logic = {}
 
+-- fade-in effect for esp elements
+local function fadeIn(instance)
+	local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	if instance:IsA("Highlight") then
+		instance.FillTransparency = 1
+		instance.OutlineTransparency = 1
+		TweenService:Create(instance, tweenInfo, { FillTransparency = 0, OutlineTransparency = 0 }):Play()
+	elseif instance:IsA("BillboardGui") then
+		local label = instance:FindFirstChildOfClass("TextLabel")
+		if label then
+			local stroke = label:FindFirstChildOfClass("UIStroke")
+			label.TextTransparency = 1
+			if stroke then stroke.Transparency = 1 end
+			local tween = TweenService:Create(label, tweenInfo, { TextTransparency = 0 })
+			tween:Play()
+			if stroke then
+				local strokeTween = TweenService:Create(stroke, tweenInfo, { Transparency = 0 })
+				strokeTween:Play()
+			end
+		end
+	end
+end
+
 -- a reusable function to create billboard guis for esp
 local function CreateBillboardGui(options: {
 	Parent: Instance,
@@ -102,6 +126,10 @@ local function CreateBillboardGui(options: {
 	textLabel.Text = options.Text
 	textLabel.TextColor3 = options.TextColor
 	textLabel.Parent = billboardGui
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.new(0, 0, 0)
+	stroke.Thickness = 1.5
+	stroke.Parent = textLabel
 	return billboardGui
 end
 
@@ -174,9 +202,11 @@ do
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then doorText = "Door: " .. sign.Stinker.Text end
-		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0), StudsOffset = Vector3.new(0, 2.5, 0) })
+		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
 		local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function() if not part.CanCollide then cleanupDoor(part) end end)
 		doorData[part] = { highlight = highlight, billboard = billboardGui, connection = connection }
+		fadeIn(highlight)
+		fadeIn(billboardGui)
 	end
 
 	Logic.DoorESP = function(enable: boolean)
@@ -220,6 +250,8 @@ do
 		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
 		local connection = part.AncestryChanged:Connect(function(_, parent) if parent == nil then cleanupMonster(part) end end)
 		monsterData[part] = { highlight = highlight, billboard = billboardGui, connection = connection }
+		fadeIn(highlight)
+		fadeIn(billboardGui)
 	end
 
 	Logic.MonsterESP = function(enable: boolean)
@@ -237,7 +269,7 @@ end
 
 -- ESP Factories
 do
-	-- for esp in a static folder (e.g. CurrentRooms, Drops)
+	-- for esp in a static folder (e.g. Drops)
 	local function CreateStaticESPLogic(targetFolder: Instance, itemsToTrack: table)
 		local trackedData = {}
 		local connection = nil
@@ -255,6 +287,8 @@ do
 			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
 			local conn = model.AncestryChanged:Connect(function(_, p) if p == nil or not model:IsDescendantOf(targetFolder) then cleanup(model) end end)
 			trackedData[model] = { highlight = highlight, billboard = gui, connection = conn }
+			fadeIn(highlight)
+			fadeIn(gui)
 		end
 		return function(enable: boolean)
 			if enable then
@@ -270,7 +304,7 @@ do
 	end
 
 	-- for esp that should only appear in the current room
-	local function CreateCurrentRoomESPLogic(itemsToTrack: table)
+	local function CreateCurrentRoomESPLogic(scanFolder: Instance, itemsToTrack: table)
 		local masterList, visibleList = {}, {}
 		local roomConn, descConn = nil, nil
 		local function cleanup(model) if visibleList[model] then if visibleList[model].highlight and visibleList[model].highlight.Parent then visibleList[model].highlight:Destroy() end if visibleList[model].billboard and visibleList[model].billboard.Parent then visibleList[model].billboard:Destroy() end visibleList[model] = nil end end
@@ -286,6 +320,8 @@ do
 			local espText = itemConfig.Text or model.Name
 			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
 			visibleList[model] = { highlight = highlight, billboard = gui }
+			fadeIn(highlight)
+			fadeIn(gui)
 		end
 		local function updateVisibility()
 			local currentRoomModel = Common.GetCurrentRoomModel()
@@ -295,8 +331,8 @@ do
 		end
 		return function(enable: boolean)
 			if enable then
-				for _, d in ipairs(Workspace:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true end end
-				descConn = Workspace.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true updateVisibility() end end)
+				for _, d in ipairs(scanFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true end end
+				descConn = scanFolder.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true updateVisibility() end end)
 				roomConn = Common.RoomChanged:Connect(updateVisibility)
 				updateVisibility()
 			else
@@ -313,11 +349,11 @@ do
 	local books = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" } }
 	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
 
-	Logic.ItemESP = CreateStaticESPLogic(Common.Rooms, items)
+	Logic.ItemESP = CreateCurrentRoomESPLogic(Common.Rooms, items)
 	Logic.DropsESP = CreateStaticESPLogic(Common.Drops, items)
-	Logic.BookESP = CreateStaticESPLogic(Common.Rooms, books)
-	Logic.HidingESP = CreateCurrentRoomESPLogic(hidingSpots)
-	Logic.LeverESP = CreateCurrentRoomESPLogic(levers)
+	Logic.BookESP = CreateCurrentRoomESPLogic(Common.Rooms, books)
+	Logic.HidingESP = CreateCurrentRoomESPLogic(Common.Rooms, hidingSpots)
+	Logic.LeverESP = CreateCurrentRoomESPLogic(Common.Rooms, levers)
 end
 
 -- Anti-Screech
