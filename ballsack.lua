@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.5" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.7" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -60,9 +60,6 @@ end
 type Obsidian = typeof(require(script:FindFirstChild("Obsidian")))
 type SaveManager = typeof(require(script:FindFirstChild("SaveManager")))
 
-local Obsidian: Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-local SaveManager: SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
-
 local function debugNotify(text: string)
 	print(SCRIPT_ID .. ": " .. text)
 	Obsidian:Notify({
@@ -85,7 +82,7 @@ local TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirectio
 
 -- fade-in/out effects for esp elements
 local function tweenInstance(instance, out)
-	local onComplete = out and function() instance:Destroy() end or nil
+	local onComplete = out and function() if instance and instance.Parent then instance:Destroy() end end or nil
 	if instance:IsA("Highlight") then
 		local goal = { FillTransparency = out and 1 or 0.5, OutlineTransparency = out and 1 or 0 }
 		if not out then instance.FillTransparency, instance.OutlineTransparency = 1, 1 end
@@ -326,6 +323,9 @@ end
 
 -- Room & ESP Distance Tracker
 task.spawn(function()
+	if _G.RoomTrackerActive then return end
+	_G.RoomTrackerActive = true
+
 	local trackedDoors = {}
 	local function cleanupTrackerDoor(part) if trackedDoors[part] then trackedDoors[part].ancestryConn:Disconnect() trackedDoors[part].collideConn:Disconnect() trackedDoors[part] = nil end end
 	local function setupTrackerDoor(part)
@@ -336,7 +336,12 @@ task.spawn(function()
 				local stinker = sign and sign:FindFirstChild("Stinker")
 				if stinker and stinker:IsA("TextLabel") then
 					local roomNum = tonumber(stinker.Text)
-					if roomNum and roomNum > Common.CurrentRoom then Common.CurrentRoom = roomNum print(SCRIPT_ID .. ": Entered room " .. roomNum) Common.RoomChanged:Fire() end
+					if roomNum and roomNum > Common.CurrentRoom then
+						Common.CurrentRoom = roomNum
+						print(SCRIPT_ID .. ": Entered room " .. roomNum)
+						Common.RoomChanged:Fire()
+						cleanupTrackerDoor(part) -- self-destruct listener after it's used
+					end
 				end
 			end
 		end)
@@ -392,8 +397,6 @@ do
 	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v) Logic.SetSpeedValue(v) end })
 	PlayerGroupbox:AddToggle("InstantPrompts", { Text = "Instant Prompts", Default = false, Callback = function(v) Logic.InstantPrompts(v) end })
 	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v) Logic.SetFOV(v) end })
-	PlayerGroupbox:AddToggle("HidingTransparency", { Text = "Hiding Transparency", Default = false, Callback = function(v) Logic.HidingTransparency(v) end })
-	PlayerGroupbox:AddSlider("HidingTransparencyValue", { Text = "Hiding Transparency", Default = 0.5, Min = 0.1, Max = 1, Callback = function(v) Logic.SetHidingTransparencyValue(v) end })
 end
 debugNotify("created Tabs.Main")
 
@@ -417,6 +420,8 @@ do
 	ESPGroupbox:AddToggle("HidingESP", { Text = "Hiding Spot ESP", Default = false, Callback = function(v) Logic.HidingESP(v) end })
 	ESPGroupbox:AddToggle("BookESP", { Text = "Book ESP", Default = false, Callback = function(v) Logic.BookESP(v) end })
 	ESPGroupbox:AddToggle("LeverESP", { Text = "Lever ESP", Default = false, Callback = function(v) Logic.LeverESP(v) end })
+	ESPGroupbox:AddToggle("HidingTransparency", { Text = "Hiding Transparency", Default = false, Callback = function(v) Logic.HidingTransparency(v) end })
+	ESPGroupbox:AddSlider("HidingTransparencyValue", { Text = "Hiding Transparency", Default = 0.5, Min = 0.1, Max = 1, Rounding = 2, Callback = function(v) Logic.SetHidingTransparencyValue(v) end })
 end
 debugNotify("created Tabs.Visual")
 
