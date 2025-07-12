@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.7" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.8" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -59,6 +59,15 @@ end
 
 type Obsidian = typeof(require(script:FindFirstChild("Obsidian")))
 type SaveManager = typeof(require(script:FindFirstChild("SaveManager")))
+
+local Obsidian: Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+local SaveManager: SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
+
+-- check if libraries loaded correctly before proceeding
+if not Obsidian or not SaveManager then
+	print(SCRIPT_ID .. ": Failed to load required libraries from GitHub. The script cannot continue.")
+	return
+end
 
 local function debugNotify(text: string)
 	print(SCRIPT_ID .. ": " .. text)
