@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.4" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.5" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -193,7 +193,7 @@ do
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
 
-		part.Transparency = 0 
+		part.Transparency = 0 -- set transparency
 
 		-- determine monster text based on parent name
 		local monsterText = "I dont know dude"
@@ -215,7 +215,8 @@ do
 			Parent = part,
 			Adornee = part,
 			Text = monsterText,
-			TextColor = Color3.fromRGB(255, 0, 0)
+			TextColor = Color3.fromRGB(255, 0, 0),
+			StudsOffset = Vector3.new(0, 0, 0) -- no height offset
 		})
 
 		-- connection to clean up when monster is removed
@@ -258,6 +259,88 @@ do
 			end
 			for _, part in ipairs(partsToClean) do
 				cleanupMonster(part)
+			end
+		end
+	end
+end
+
+-- Item ESP
+do
+	-- easy to add new items here
+	local itemsToTrack = {
+		["Key"] = { Color = Color3.fromRGB(255, 255, 0) },
+	}
+
+	local itemData = {}
+	local workspaceConnection = nil
+
+	local function cleanupItem(part)
+		if itemData[part] then
+			if itemData[part].highlight then itemData[part].highlight:Destroy() end
+			if itemData[part].billboard then itemData[part].billboard:Destroy() end
+			if itemData[part].connection then itemData[part].connection:Disconnect() end
+			itemData[part] = nil
+		end
+	end
+
+	local function setupItem(part)
+		if not part or not part:IsA("BasePart") or itemData[part] then return end
+
+		local itemConfig = itemsToTrack[part.Name]
+		if not itemConfig then return end
+
+		local highlight = Instance.new("Highlight")
+		highlight.Parent = part
+		highlight.FillColor = itemConfig.Color
+		highlight.OutlineColor = itemConfig.Color
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+		local billboardGui = CreateBillboardGui({
+			Parent = part,
+			Adornee = part,
+			Text = part.Name,
+			TextColor = itemConfig.Color
+		})
+
+		local connection = part.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then
+				cleanupItem(part)
+			end
+		end)
+
+		itemData[part] = {
+			highlight = highlight,
+			billboard = billboardGui,
+			connection = connection
+		}
+	end
+
+	Logic.ItemESP = function(enable: boolean)
+		if enable then
+			for _, descendant in ipairs(Workspace:GetDescendants()) do
+				if itemsToTrack[descendant.Name] and descendant:IsA("BasePart") then
+					setupItem(descendant)
+				end
+			end
+
+			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
+				if itemsToTrack[descendant.Name] and descendant:IsA("BasePart") then
+					task.wait()
+					setupItem(descendant)
+				end
+			end)
+		else
+			if workspaceConnection then
+				workspaceConnection:Disconnect()
+				workspaceConnection = nil
+			end
+
+			local partsToClean = {}
+			for part in pairs(itemData) do
+				table.insert(partsToClean, part)
+			end
+			for _, part in ipairs(partsToClean) do
+				cleanupItem(part)
 			end
 		end
 	end
@@ -349,6 +432,14 @@ do
 		Default = false,
 		Callback = function(value: boolean)
 			Logic.MonsterESP(value)
+		end,
+	})
+
+	ESPGroupbox:AddToggle("ItemESP", {
+		Text = "Item ESP",
+		Default = false,
+		Callback = function(value: boolean)
+			Logic.ItemESP(value)
 		end,
 	})
 end
