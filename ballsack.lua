@@ -44,6 +44,35 @@ debugNotify("loaded libraries")
 
 local Logic = {}
 
+-- a reusable function to create billboard guis for esp
+local function CreateBillboardGui(options: {
+	Parent: Instance,
+	Adornee: BasePart,
+	Text: string,
+	TextColor: Color3,
+	StudsOffset: Vector3?
+})
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.Size = UDim2.new(0, 200, 0, 50)
+	billboardGui.AlwaysOnTop = true
+	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 2.5, 0) -- default offset
+	billboardGui.Adornee = options.Adornee
+	billboardGui.Parent = options.Parent
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextScaled = false
+	textLabel.TextSize = 20
+	textLabel.Font = Enum.Font.SourceSansBold
+	textLabel.Text = options.Text
+	textLabel.TextColor3 = options.TextColor
+	textLabel.Parent = billboardGui
+
+	return billboardGui
+end
+
+
 -- Fullbright
 do
 	local ogBrightness = Lighting.Brightness
@@ -59,117 +88,169 @@ do
 	end
 end
 
+-- Door ESP
 do
-    local doorData = {} -- Map: part -> {highlight, billboard, connection}
-    local workspaceConnection = nil
+	local doorData = {}
+	local workspaceConnection = nil
 
-    local function cleanupDoor(part)
-        if doorData[part] then
-            -- Destroy instances if they exist
-            if doorData[part].highlight and doorData[part].highlight.Parent then doorData[part].highlight:Destroy() end
-            if doorData[part].billboard and doorData[part].billboard.Parent then doorData[part].billboard:Destroy() end
-            
-            -- Disconnect the signal
-            if doorData[part].connection then doorData[part].connection:Disconnect() end
-            
-            -- Remove from the tracking table
-            doorData[part] = nil
-        end
-    end
+	local function cleanupDoor(part)
+		if doorData[part] then
+			if doorData[part].highlight and doorData[part].highlight.Parent then doorData[part].highlight:Destroy() end
+			if doorData[part].billboard and doorData[part].billboard.Parent then doorData[part].billboard:Destroy() end
+			if doorData[part].connection then doorData[part].connection:Disconnect() end
+			doorData[part] = nil
+		end
+	end
 
-    local function setupDoor(part)
-        -- Pre-conditions: check if part is a valid door, not already processed, and is collidable
-        if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then return end
+	local function setupDoor(part)
+		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then return end
 
-        local model = part.Parent
-        if not (model:IsA("Model") and model.Name == "Door") then return end
+		local model = part.Parent
+		if not (model:IsA("Model") and model.Name == "Door") then return end
 
-        -- Add Highlight
-        local highlight = Instance.new("Highlight")
-        highlight.Parent = part
-        highlight.FillColor = Color3.fromRGB(0, 255, 0)
-        highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		-- door esp highlight
+		local highlight = Instance.new("Highlight")
+		highlight.Parent = part
+		highlight.FillColor = Color3.fromRGB(0, 255, 0)
+		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-        -- Add BillboardGui
-        local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Parent = part
-        billboardGui.Size = UDim2.new(0, 200, 0, 50)
-        billboardGui.AlwaysOnTop = true
-        billboardGui.Adornee = part
-        billboardGui.StudsOffset = Vector3.new(0, 2.5, 0) -- Move it up slightly
+		-- determine door text
+		local doorText = "Door"
+		local sign = model:FindFirstChild("Sign")
+		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
+			doorText = "Door: " .. sign.Stinker.Text
+		end
 
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Parent = billboardGui
-        textLabel.Size = UDim2.new(1, 0, 1, 0)
-        textLabel.BackgroundTransparency = 1
-        textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        
-        -- Set a fixed, smaller text size
-        textLabel.TextScaled = false
-        textLabel.TextSize = 20
-        textLabel.Font = Enum.Font.SourceSansBold
+		-- door esp billboard gui using the new function
+		local billboardGui = CreateBillboardGui({
+			Parent = part,
+			Adornee = part,
+			Text = doorText,
+			TextColor = Color3.fromRGB(0, 255, 0)
+		})
 
-        local sign = model:FindFirstChild("Sign")
-        if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
-            textLabel.Text = "Door: " .. sign.Stinker.Text
-        else
-            textLabel.Text = "Door"
-        end
+		local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
+			if not part.CanCollide then
+				cleanupDoor(part)
+			end
+		end)
+		doorData[part] = {
+			highlight = highlight,
+			billboard = billboardGui,
+			connection = connection
+		}
+	end
 
-        -- Listen for CanCollide property change to clean up the door
-        local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
-            if not part.CanCollide then
-                cleanupDoor(part)
-            end
-        end)
+	Logic.DoorESP = function(enable: boolean)
+		if enable then
+			for _, descendant in ipairs(Workspace:GetDescendants()) do
+				if descendant.Name == "Door" and descendant:IsA("BasePart") then
+					setupDoor(descendant)
+				end
+			end
 
-        -- Store all created instances and the connection for this part
-        doorData[part] = {
-            highlight = highlight,
-            billboard = billboardGui,
-            connection = connection
-        }
-    end
+			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
+				if descendant.Name == "Door" and descendant:IsA("BasePart") then
+					task.wait()
+					setupDoor(descendant)
+				end
+			end)
+		else
+			if workspaceConnection then
+				workspaceConnection:Disconnect()
+				workspaceConnection = nil
+			end
 
-    Logic.DoorESP = function(enable: boolean)
-        if enable then
-            if not game:IsLoaded() then game.Loaded:Wait() end
-
-            -- Initial scan for all existing doors in the workspace
-            for _, descendant in ipairs(Workspace:GetDescendants()) do
-                if descendant.Name == "Door" and descendant:IsA("BasePart") then
-                    setupDoor(descendant)
-                end
-            end
-
-            -- Listen for new parts being added to the workspace
-            workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
-                 if descendant.Name == "Door" and descendant:IsA("BasePart") then
-                    task.wait() -- Wait a moment for the part's parent to be set
-                    setupDoor(descendant)
-                end
-            end)
-        else
-            -- Disconnect the listener for new doors
-            if workspaceConnection then
-                workspaceConnection:Disconnect()
-                workspaceConnection = nil
-            end
-
-            -- Create a copy of the keys to safely iterate while removing items
-            local partsToClean = {}
-            for part in pairs(doorData) do
-                table.insert(partsToClean, part)
-            end
-
-            -- Clean up all tracked doors
-            for _, part in ipairs(partsToClean) do
-                cleanupDoor(part)
-            end
-        end
-    end
+			local partsToClean = {}
+			for part in pairs(doorData) do
+				table.insert(partsToClean, part)
+			end
+			for _, part in ipairs(partsToClean) do
+				cleanupDoor(part)
+			end
+		end
+	end
 end
+
+-- Monster ESP
+do
+	local monsterData = {}
+	local workspaceConnection = nil
+
+	local function cleanupMonster(part)
+		if monsterData[part] then
+			if monsterData[part].highlight then monsterData[part].highlight:Destroy() end
+			if monsterData[part].billboard then monsterData[part].billboard:Destroy() end
+			if monsterData[part].connection then monsterData[part].connection:Disconnect() end
+			monsterData[part] = nil
+		end
+	end
+
+	local function setupMonster(part)
+		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
+
+		-- monster esp highlight
+		local highlight = Instance.new("Highlight")
+		highlight.Parent = part
+		highlight.FillColor = Color3.fromRGB(255, 0, 0)
+		highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+		-- monster esp billboard gui
+		local billboardGui = CreateBillboardGui({
+			Parent = part,
+			Adornee = part,
+			Text = "Rush",
+			TextColor = Color3.fromRGB(255, 0, 0),
+			StudsOffset = Vector3.new(0, 5, 0) -- a bit higher for the monster
+		})
+
+		-- connection to clean up when monster is removed
+		local connection = part.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then
+				cleanupMonster(part)
+			end
+		end)
+
+		monsterData[part] = {
+			highlight = highlight,
+			billboard = billboardGui,
+			connection = connection
+		}
+	end
+
+	Logic.MonsterESP = function(enable: boolean)
+		if enable then
+			for _, descendant in ipairs(Workspace:GetDescendants()) do
+				if descendant.Name == "RushNew" and descendant:IsA("BasePart") then
+					setupMonster(descendant)
+				end
+			end
+
+			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
+				if descendant.Name == "RushNew" and descendant:IsA("BasePart") then
+					task.wait() -- wait a frame to ensure it's fully initialized
+					setupMonster(descendant)
+				end
+			end)
+		else
+			if workspaceConnection then
+				workspaceConnection:Disconnect()
+				workspaceConnection = nil
+			end
+
+			local partsToClean = {}
+			for part in pairs(monsterData) do
+				table.insert(partsToClean, part)
+			end
+			for _, part in ipairs(partsToClean) do
+				cleanupMonster(part)
+			end
+		end
+	end
+end
+
 debugNotify("initialized Logic")
 
 
@@ -241,15 +322,23 @@ do
 			Logic.Fullbright(value)
 		end,
 	})
- 
-    local ESPGroupbox = Tabs.Visual:AddLeftGroupbox("ESP", "eye")
-    ESPGroupbox:AddToggle("DoorESP", {
-        Text = "Door ESP",
-        Default = false,
-        Callback = function(value: boolean)
-            Logic.DoorESP(value)
-        end,
-    })
+
+	local ESPGroupbox = Tabs.Visual:AddLeftGroupbox("ESP", "eye")
+	ESPGroupbox:AddToggle("DoorESP", {
+		Text = "Door ESP",
+		Default = false,
+		Callback = function(value: boolean)
+			Logic.DoorESP(value)
+		end,
+	})
+
+	ESPGroupbox:AddToggle("MonsterESP", {
+		Text = "Monster ESP",
+		Default = false,
+		Callback = function(value: boolean)
+			Logic.MonsterESP(value)
+		end,
+	})
 end
 
 debugNotify("created Tabs.Visual")
