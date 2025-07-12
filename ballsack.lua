@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.1.8" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.1.9" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -265,7 +265,7 @@ do
 	end
 
 	local items = {
-		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" },
+		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) },
 	}
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local books = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" } }
@@ -355,29 +355,42 @@ end
 
 -- Room Tracker
 task.spawn(function()
-	while task.wait(1) do
-		local lowestDoorNumber = math.huge
-		for _, part in ipairs(Workspace:GetDescendants()) do
-			if part.Name == "Door" and part:IsA("BasePart") and part.CanCollide then
+	local trackedDoors = {}
+
+	local function cleanupTrackerDoor(part)
+		if trackedDoors[part] then
+			trackedDoors[part].ancestryConn:Disconnect()
+			trackedDoors[part].collideConn:Disconnect()
+			trackedDoors[part] = nil
+		end
+	end
+
+	local function setupTrackerDoor(part)
+		if not (part.Name == "Door" and part:IsA("BasePart")) or trackedDoors[part] then return end
+
+		local collideConn = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
+			if not part.CanCollide then
 				local sign = part.Parent and part.Parent:FindFirstChild("Sign")
 				local stinker = sign and sign:FindFirstChild("Stinker")
 				if stinker and stinker:IsA("TextLabel") then
-					local num = tonumber(stinker.Text)
-					if num and num < lowestDoorNumber then
-						lowestDoorNumber = num
+					local roomNum = tonumber(stinker.Text)
+					if roomNum and roomNum > Common.CurrentRoom then
+						Common.CurrentRoom = roomNum
+						print(SCRIPT_ID .. ": Entered room " .. roomNum)
 					end
 				end
 			end
-		end
+		end)
 
-		if lowestDoorNumber ~= math.huge then
-			local newRoom = lowestDoorNumber - 1
-			if newRoom > Common.CurrentRoom then
-				Common.CurrentRoom = newRoom
-				print(SCRIPT_ID .. ": Entered room " .. newRoom)
-			end
-		end
+		local ancestryConn = part.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then cleanupTrackerDoor(part) end
+		end)
+
+		trackedDoors[part] = { collideConn = collideConn, ancestryConn = ancestryConn }
 	end
+
+	for _, d in ipairs(Workspace:GetDescendants()) do setupTrackerDoor(d) end
+	Workspace.DescendantAdded:Connect(setupTrackerDoor)
 end)
 
 debugNotify("initialized Logic")
