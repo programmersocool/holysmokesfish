@@ -1,9 +1,11 @@
+-- recoder-ai/cheeky
+
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.2" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.3" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -190,6 +192,14 @@ do
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
 
+		-- determine monster text based on parent name
+		local monsterText = "I dont know dude"
+		if part.Parent.Name == "AmbushMoving" then
+			monsterText = "Ambush"
+		elseif part.Parent.Name == "RushMoving" then
+			monsterText = "Rush"
+		end
+
 		-- monster esp highlight
 		local highlight = Instance.new("Highlight")
 		highlight.Parent = part
@@ -201,7 +211,7 @@ do
 		local billboardGui = CreateBillboardGui({
 			Parent = part,
 			Adornee = part,
-			Text = "Rush",
+			Text = monsterText,
 			TextColor = Color3.fromRGB(255, 0, 0),
 			StudsOffset = Vector3.new(0, 5, 0) -- a bit higher for the monster
 		})
