@@ -327,12 +327,12 @@ do
 	Logic.MonsterESP = function(enable: boolean)
 		if enable then
 			for _, d in ipairs(Workspace:GetDescendants()) do
-				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Lookman") then
+				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Eyes") then
 					setupMonster(d)
 				end
 			end
 			workspaceConnection = Workspace.DescendantAdded:Connect(function(d)
-				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Lookman") then
+				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Eyes") then
 					task.wait()
 					setupMonster(d)
 				end
