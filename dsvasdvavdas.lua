@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 -- thingyyyy
 local Signal = {}
@@ -326,7 +327,6 @@ do
 end
 
 -- ESP Factories
-local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 do
 	local function CreateESPLogic(scanFolder: Instance, itemsToTrack: table, isRoomSpecific: boolean)
 		local masterList, visibleList, roomConn, descConn = {}, {}, nil, nil
@@ -416,6 +416,7 @@ do
 			end
 		end
 	end
+	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local objectives = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" }, ["LiveBreakerPolePickup"] = { Color = Color3.fromRGB(150, 150, 150), Text = "Breaker" } }
 	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
@@ -442,6 +443,7 @@ do
 	local originalSpeed, speedEnabled, currentSpeed, speedConn = 16, false, 16, nil
 	local twerkEnabled, twerkAnimTrack = false, nil
 	local TWERK_ANIM_ID = "rbxassetid://12874447851"
+	local autoInteractEnabled, autoInteractTarget = false, "Gold"
 
 	local function stopTwerk()
 		if twerkAnimTrack then
@@ -576,51 +578,43 @@ do
 		end
 	end
 
-	local autoInteractEnabled, autoInteractMode, autoInteractConns, autoInteractTargets = false, "Gold", {}, {}
-	local allItemNamesForAuto = { "GoldPile" }
-	for name, _ in pairs(items) do table.insert(allItemNamesForAuto, name) end
-
-	local function updateAutoInteractTargets()
-		autoInteractTargets = {}
-		if autoInteractMode == "Gold" then
-			autoInteractTargets["GoldPile"] = true
-		elseif autoInteractMode == "Keys" then
-			autoInteractTargets["KeyObtain"] = true
-		elseif autoInteractMode == "All Items" then
-			for _, name in ipairs(allItemNamesForAuto) do autoInteractTargets[name] = true end
-		end
-	end
-
-	local function handleAutoInteractPrompt(prompt)
-		if not (prompt and prompt:IsA("ProximityPrompt")) then return end
-		local model = prompt:FindFirstAncestorOfClass("Model")
-		if not model then return end
-		if autoInteractEnabled and autoInteractTargets[model.Name] then
-			prompt:InputHoldBegin()
-		end
-	end
-
-	Logic.AutoInteract = function(enable)
-		autoInteractEnabled = enable
-		if enable then
-			updateAutoInteractTargets()
-			for _, container in ipairs({ Common.Rooms, Common.Drops }) do
-				for _, d in ipairs(container:GetDescendants()) do handleAutoInteractPrompt(d) end
-				local conn = container.DescendantAdded:Connect(handleAutoInteractPrompt)
-				table.insert(autoInteractConns, conn)
+	local allItemNames = { ["KeyObtain"] = true, ["Lighter"] = true, ["Flashlight"] = true, ["Vitamins"] = true, ["Bandage"] = true, ["Lockpicks"] = true, ["Candle"] = true, ["Battery"] = true, ["SkeletonKey"] = true, ["Crucifix"] = true, ["Smoothie"] = true, ["GoldPile"] = true }
+	local function autoInteractLoop()
+		while autoInteractEnabled do
+			local char = player.Character
+			if char and char.PrimaryPart then
+				for _, container in ipairs({ Common.Rooms, Common.Drops }) do
+					for _, prompt in ipairs(container:GetDescendants()) do
+						if prompt.Name == "ModulePrompt" and prompt:IsA("ProximityPrompt") and prompt.Enabled and prompt.Adornee and prompt.Adornee.Parent then
+							local dist = (char.PrimaryPart.Position - prompt.Adornee.Position).Magnitude
+							if dist <= prompt.MaxActivationDistance then
+								local modelName = prompt.Parent.Name
+								local shouldTrigger = false
+								if autoInteractTarget == "All Items" then
+									if allItemNames[modelName] then shouldTrigger = true end
+								elseif autoInteractTarget == "Keys" then
+									if modelName == "KeyObtain" or modelName == "SkeletonKey" then shouldTrigger = true end
+								elseif autoInteractTarget == "Gold" then
+									if modelName == "GoldPile" then shouldTrigger = true end
+								end
+								if shouldTrigger then
+									ProximityPromptService:PromptTriggered(prompt)
+									task.wait(0.1)
+								end
+							end
+						end
+					end
+				end
 			end
-		else
-			for _, conn in ipairs(autoInteractConns) do conn:Disconnect() end
-			autoInteractConns = {}
+			task.wait()
 		end
 	end
-
-	Logic.SetAutoInteractMode = function(mode)
-		autoInteractMode = mode
-		if autoInteractEnabled then
-			Logic.AutoInteract(false)
-			Logic.AutoInteract(true)
-		end
+	Logic.SetAutoInteract = function(enable)
+		autoInteractEnabled = enable
+		if enable then task.spawn(autoInteractLoop) end
+	end
+	Logic.SetAutoInteractTarget = function(target)
+		autoInteractTarget = target
 	end
 
 	local originalFOV = workspace.CurrentCamera.FieldOfView
@@ -728,14 +722,14 @@ do
 	PlayerGroupbox:AddToggle("ClipPrompts", { Text = "Clip Prompts", Default = false, Callback = function(v)
 		Logic.ClipPrompts(v)
 	end })
-	PlayerGroupbox:AddToggle("AutoInteract", { Text = "Auto Interact", Default = false, Callback = function(v)
-		Logic.AutoInteract(v)
-	end })
-	PlayerGroupbox:AddDropdown("AutoInteractMode", { Values = { "Gold", "Keys", "All Items" }, Default = "Gold", Text = "Auto Interact Mode", Callback = function(v)
-		Logic.SetAutoInteractMode(v)
-	end })
 	PlayerGroupbox:AddToggle("Twerk", { Text = "Twerk", Default = false, Callback = function(v)
 		Logic.Twerk(v)
+	end })
+	PlayerGroupbox:AddToggle("AutoInteract", { Text = "Auto Interact", Default = false, Callback = function(v)
+		Logic.SetAutoInteract(v)
+	end })
+	PlayerGroupbox:AddDropdown("AutoInteractTarget", { Values = { "Gold", "Keys", "All Items" }, Default = "Gold", Text = "Interact Target", Callback = function(v)
+		Logic.SetAutoInteractTarget(v)
 	end })
 	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v)
 		Logic.SetFOV(v)
