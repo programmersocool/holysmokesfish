@@ -585,7 +585,7 @@ do
 			if char and char.PrimaryPart then
 				for _, container in ipairs({ Common.Rooms, Common.Drops }) do
 					for _, prompt in ipairs(container:GetDescendants()) do
-						if prompt:IsA("ProximityPrompt") and prompt.Enabled and prompt.Adornee and prompt.Adornee.Parent then
+						if prompt:IsA("ProximityPrompt") and prompt.Enabled then
 							local model = prompt.Parent
 							if model:IsA("Model") then
 								local modelName = model.Name
@@ -598,7 +598,7 @@ do
 									if modelName == "GoldPile" then shouldTrigger = true end
 								end
 								if shouldTrigger then
-									local dist = (char.PrimaryPart.Position - prompt.Adornee.Position).Magnitude
+									local dist = (char.PrimaryPart.Position - prompt.Parent.Position).Magnitude
 									if dist <= prompt.MaxActivationDistance then
 										ProximityPromptService:PromptTriggered(prompt)
 										task.wait(0.1)
