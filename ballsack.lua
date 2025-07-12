@@ -314,7 +314,6 @@ do
 			Adornee = adorneePart,
 			Text = model.Name,
 			TextColor = itemConfig.Color
-			StudsOffset = Vector3.new(0, 0, 0)
 		})
 
 		local connection = model.AncestryChanged:Connect(function(_, parent)
