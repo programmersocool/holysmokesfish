@@ -5,7 +5,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.7.4" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "6.7.6" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -260,56 +260,79 @@ do
 	end
 end
 
--- Monster ESP
+-- Monster ESP & Alerts
 do
 	local monsterData, workspaceConnection = {}, nil
-	local function cleanupMonster(part)
-		if monsterData[part] then
-			if part and part.Parent then
-				part.Transparency = 1
-			end
-			tweenInstance(monsterData[part].highlight, true)
-			tweenInstance(monsterData[part].billboard, true)
-			if monsterData[part].connection then
-				monsterData[part].connection:Disconnect()
-			end
-			ActiveESPs[part] = nil
-			monsterData[part] = nil
+	local alertEnabled = false
+	local selectedEntities = { Rush = true, Ambush = true, Eyes = true }
+
+	Logic.SetMonsterAlert = function(enable)
+		alertEnabled = enable
+	end
+	Logic.SetAlertEntities = function(entities)
+		selectedEntities = {}
+		for _, entity in ipairs(entities) do
+			selectedEntities[entity] = true
 		end
 	end
-	local function setupMonster(part)
-		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then
-			return
+
+	local function cleanupMonster(entity)
+		if monsterData[entity] then
+			if entity:IsA("BasePart") then entity.Transparency = 1 end
+			tweenInstance(monsterData[entity].highlight, true)
+			tweenInstance(monsterData[entity].billboard, true)
+			if monsterData[entity].connection then monsterData[entity].connection:Disconnect() end
+			ActiveESPs[entity] = nil
+			monsterData[entity] = nil
 		end
-		part.Transparency = 0
-		local monsterText = "I dont know dude"
-		if part.Parent.Name == "AmbushMoving" then
-			monsterText = "Ambush"
-		elseif part.Parent.Name == "RushMoving" then
-			monsterText = "Rush"
-		end
-		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = part, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
-		local guiElements = CreateBillboardGui({ Parent = part, Adornee = part, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
-		local connection = part.AncestryChanged:Connect(function(_, parent)
-			if parent == nil then
-				cleanupMonster(part)
+	end
+
+	local function setupMonster(entity)
+		if not entity or not entity.Parent or monsterData[entity] then return end
+
+		local monsterText, highlightPart, adorneePart
+		if entity:IsA("BasePart") and entity.Name == "RushNew" then
+			highlightPart = entity
+			adorneePart = entity
+			if entity.Parent.Name == "AmbushMoving" then
+				monsterText = "Ambush"
+			elseif entity.Parent.Name == "RushMoving" then
+				monsterText = "Rush"
 			end
+			highlightPart.Transparency = 0
+		elseif entity:IsA("Model") and entity.Name == "Lookman" then
+			highlightPart = entity
+			adorneePart = entity:FindFirstChildWhichIsA("BasePart")
+			monsterText = "Eyes"
+		end
+
+		if not (monsterText and highlightPart and adorneePart) then return end
+
+		if alertEnabled and selectedEntities[monsterText] then
+			debugNotify("ALERT: " .. monsterText .. " is active!")
+		end
+
+		local highlight = Instance.new("Highlight")
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = highlightPart, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
+		local guiElements = CreateBillboardGui({ Parent = adorneePart, Adornee = adorneePart, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
+		local connection = entity.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then cleanupMonster(entity) end
 		end)
-		monsterData[part] = { highlight = highlight, billboard = guiElements.gui, connection = connection }
-		ActiveESPs[part] = { adornee = part, distanceLabel = guiElements.distanceLabel }
+		monsterData[entity] = { highlight = highlight, billboard = guiElements.gui, connection = connection }
+		ActiveESPs[entity] = { adornee = highlightPart, distanceLabel = guiElements.distanceLabel }
 		tweenInstance(highlight, false)
 		tweenInstance(guiElements.gui, false)
 	end
+
 	Logic.MonsterESP = function(enable: boolean)
 		if enable then
 			for _, d in ipairs(Workspace:GetDescendants()) do
-				if d.Name == "RushNew" and d:IsA("BasePart") then
+				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Lookman") then
 					setupMonster(d)
 				end
 			end
 			workspaceConnection = Workspace.DescendantAdded:Connect(function(d)
-				if d.Name == "RushNew" and d:IsA("BasePart") then
+				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Lookman") then
 					task.wait()
 					setupMonster(d)
 				end
@@ -319,9 +342,7 @@ do
 				workspaceConnection:Disconnect()
 				workspaceConnection = nil
 			end
-			for p, _ in pairs(monsterData) do
-				cleanupMonster(p)
-			end
+			for p, _ in pairs(monsterData) do cleanupMonster(p) end
 		end
 	end
 end
@@ -713,6 +734,19 @@ do
 	AntiEntityGroupbox:AddToggle("AntiScreech", { Text = "Anti-Screech", Default = false, Callback = function(v)
 		Logic.AntiScreech(v)
 	end })
+	AntiEntityGroupbox:AddToggle("MonsterAlert", { Text = "Monster Alert", Default = false, Callback = function(v)
+		Logic.SetMonsterAlert(v)
+	end })
+	AntiEntityGroupbox:AddDropdown("AlertEntities", {
+		Text = "Alert Entities",
+		Values = { "Rush", "Ambush", "Eyes" },
+		Default = { "Rush", "Ambush", "Eyes" },
+		Multi = true,
+		Callback = function(v)
+			Logic.SetAlertEntities(v)
+		end,
+	})
+
 	local PlayerGroupbox = Tabs.Main:AddLeftGroupbox("Player", "user")
 	PlayerGroupbox:AddToggle("EnableSpeed", { Text = "Enable Speed", Default = false, Callback = function(v)
 		Logic.SetSpeed(v)
