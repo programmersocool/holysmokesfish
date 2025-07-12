@@ -268,7 +268,6 @@ end
 do
 	local itemsToTrack = {
 		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
-		--github update this now please
 	}
 
 	local itemData = {}
@@ -315,6 +314,7 @@ do
 			Adornee = adorneePart,
 			Text = model.Name,
 			TextColor = itemConfig.Color
+			StudsOffset = Vector3.new(0,0,0)
 		})
 
 		local connection = model.AncestryChanged:Connect(function(_, parent)
