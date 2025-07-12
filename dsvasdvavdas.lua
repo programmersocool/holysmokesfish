@@ -5,7 +5,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.6.9" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "6.7.0" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -326,6 +326,7 @@ do
 end
 
 -- ESP Factories
+local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 do
 	local function CreateESPLogic(scanFolder: Instance, itemsToTrack: table, isRoomSpecific: boolean)
 		local masterList, visibleList, roomConn, descConn = {}, {}, nil, nil
@@ -415,7 +416,6 @@ do
 			end
 		end
 	end
-	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local objectives = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" }, ["LiveBreakerPolePickup"] = { Color = Color3.fromRGB(150, 150, 150), Text = "Breaker" } }
 	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
@@ -576,6 +576,53 @@ do
 		end
 	end
 
+	local autoInteractEnabled, autoInteractMode, autoInteractConns, autoInteractTargets = false, "Gold", {}, {}
+	local allItemNamesForAuto = { "GoldPile" }
+	for name, _ in pairs(items) do table.insert(allItemNamesForAuto, name) end
+
+	local function updateAutoInteractTargets()
+		autoInteractTargets = {}
+		if autoInteractMode == "Gold" then
+			autoInteractTargets["GoldPile"] = true
+		elseif autoInteractMode == "Keys" then
+			autoInteractTargets["KeyObtain"] = true
+		elseif autoInteractMode == "All Items" then
+			for _, name in ipairs(allItemNamesForAuto) do autoInteractTargets[name] = true end
+		end
+	end
+
+	local function handleAutoInteractPrompt(prompt)
+		if not (prompt and prompt:IsA("ProximityPrompt")) then return end
+		local model = prompt:FindFirstAncestorOfClass("Model")
+		if not model then return end
+		if autoInteractEnabled and autoInteractTargets[model.Name] then
+			prompt:InputHoldBegin()
+		end
+	end
+
+	Logic.AutoInteract = function(enable)
+		autoInteractEnabled = enable
+		if enable then
+			updateAutoInteractTargets()
+			for _, container in ipairs({ Common.Rooms, Common.Drops }) do
+				for _, d in ipairs(container:GetDescendants()) do handleAutoInteractPrompt(d) end
+				local conn = container.DescendantAdded:Connect(handleAutoInteractPrompt)
+				table.insert(autoInteractConns, conn)
+			end
+		else
+			for _, conn in ipairs(autoInteractConns) do conn:Disconnect() end
+			autoInteractConns = {}
+		end
+	end
+
+	Logic.SetAutoInteractMode = function(mode)
+		autoInteractMode = mode
+		if autoInteractEnabled then
+			Logic.AutoInteract(false)
+			Logic.AutoInteract(true)
+		end
+	end
+
 	local originalFOV = workspace.CurrentCamera.FieldOfView
 	Logic.SetFOV = function(v) workspace.CurrentCamera.FieldOfView = v end
 	Obsidian:OnUnload(function() workspace.CurrentCamera.FieldOfView = originalFOV end)
@@ -680,6 +727,12 @@ do
 	end })
 	PlayerGroupbox:AddToggle("ClipPrompts", { Text = "Clip Prompts", Default = false, Callback = function(v)
 		Logic.ClipPrompts(v)
+	end })
+	PlayerGroupbox:AddToggle("AutoInteract", { Text = "Auto Interact", Default = false, Callback = function(v)
+		Logic.AutoInteract(v)
+	end })
+	PlayerGroupbox:AddDropdown("AutoInteractMode", { Values = { "Gold", "Keys", "All Items" }, Default = "Gold", Text = "Auto Interact Mode", Callback = function(v)
+		Logic.SetAutoInteractMode(v)
 	end })
 	PlayerGroupbox:AddToggle("Twerk", { Text = "Twerk", Default = false, Callback = function(v)
 		Logic.Twerk(v)
