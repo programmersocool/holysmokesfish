@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.2" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.3" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -85,23 +85,36 @@ local TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirectio
 
 -- fade-in/out effects for esp elements
 local function tweenInstance(instance, out, onComplete)
-	local goal = {}
 	if instance:IsA("Highlight") then
-		goal.FillTransparency = out and 1 or 0.5
-		goal.OutlineTransparency = out and 1 or 0
+		local goal = { FillTransparency = out and 1 or 0.5, OutlineTransparency = out and 1 or 0 }
 		if not out then instance.FillTransparency, instance.OutlineTransparency = 1, 1 end
+		local tween = TweenService:Create(instance, TWEEN_INFO, goal)
+		if onComplete then tween.Completed:Connect(onComplete) end
+		tween:Play()
 	elseif instance:IsA("BillboardGui") then
-		local label = instance:FindFirstChildOfClass("TextLabel")
-		if label then
-			local stroke = label:FindFirstChildOfClass("UIStroke")
-			goal.TextTransparency = out and 1 or 0
-			if not out then label.TextTransparency = 1 if stroke then stroke.Transparency = 1 end end
-			if stroke then TweenService:Create(stroke, TWEEN_INFO, { Transparency = out and 1 or 0 }):Play() end
+		local labels = {}
+		for _, child in ipairs(instance:GetChildren()) do
+			if child:IsA("TextLabel") then table.insert(labels, child) end
+		end
+
+		if #labels > 0 then
+			for i, label in ipairs(labels) do
+				local stroke = label:FindFirstChildOfClass("UIStroke")
+				local textGoal = { TextTransparency = out and 1 or 0 }
+				if not out then label.TextTransparency = 1 end
+				local textTween = TweenService:Create(label, TWEEN_INFO, textGoal)
+				if out and i == #labels and onComplete then textTween.Completed:Connect(onComplete) end
+				textTween:Play()
+				if stroke then
+					local strokeGoal = { Transparency = out and 1 or 0 }
+					if not out then stroke.Transparency = 1 end
+					TweenService:Create(stroke, TWEEN_INFO, strokeGoal):Play()
+				end
+			end
+		else
+			if out and onComplete then onComplete() end
 		end
 	end
-	local tween = TweenService:Create(instance, TWEEN_INFO, goal)
-	if onComplete then tween.Completed:Connect(onComplete) end
-	tween:Play()
 end
 
 -- a reusable function to create billboard guis for esp
@@ -178,7 +191,7 @@ do
 		local model = part.Parent
 		if not (model:IsA("Model") and model.Name == "Door") then return end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = part, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = part, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then doorText = "Door: " .. sign.Stinker.Text end
@@ -216,7 +229,7 @@ do
 		local monsterText = "I dont know dude"
 		if part.Parent.Name == "AmbushMoving" then monsterText = "Ambush" elseif part.Parent.Name == "RushMoving" then monsterText = "Rush" end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = part, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = part, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
 		local guiElements = CreateBillboardGui({ Parent = part, Adornee = part, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
 		local connection = part.AncestryChanged:Connect(function(_, parent) if parent == nil then cleanupMonster(part) end end)
 		monsterData[part] = { highlight = highlight, billboard = guiElements.gui, connection = connection }
@@ -336,7 +349,7 @@ task.spawn(function()
 	Workspace.DescendantAdded:Connect(setupTrackerDoor)
 	RunService.RenderStepped:Connect(function()
 		local playerChar = Players.LocalPlayer.Character
-		if not playerChar then return end
+		if not playerChar or not playerChar.PrimaryPart then return end
 		local playerPos = playerChar.PrimaryPart.Position
 		for _, esp in pairs(ActiveESPs) do
 			if esp.adornee and esp.adornee.Parent then
