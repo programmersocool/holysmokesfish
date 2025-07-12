@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.9" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.1.0" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -14,7 +14,8 @@ local Workspace = game:GetService("Workspace")
 
 -- Common Objects
 local Common = {
-	Rooms = workspace:WaitForChild("CurrentRooms")
+	Rooms = workspace:WaitForChild("CurrentRooms"),
+	Drops = workspace:WaitForChild("Drops")
 }
 
 
@@ -258,9 +259,8 @@ do
 	end
 end
 
--- Item ESP
+-- Generic Model ESP (for Items and Drops)
 do
-	-- easy to add new item models here
 	local itemsToTrack = {
 		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
 		["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) },
@@ -268,95 +268,87 @@ do
 		["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) },
 	}
 
-	local itemData = {}
-	local workspaceConnection = nil
+	-- factory function to create esp logic for a specific folder
+	local function CreateModelESPLogic(targetFolder: Instance)
+		local trackedData = {}
+		local workspaceConnection = nil
 
-	local function cleanupItem(model)
-		if itemData[model] then
-			for _, highlight in ipairs(itemData[model].highlights) do
-				if highlight and highlight.Parent then highlight:Destroy() end
-			end
-			if itemData[model].billboard and itemData[model].billboard.Parent then itemData[model].billboard:Destroy() end
-			if itemData[model].connection then itemData[model].connection:Disconnect() end
-			itemData[model] = nil
-		end
-	end
-
-	local function setupItem(model)
-		if not model or not model:IsA("Model") or itemData[model] then return end
-		if not model:IsDescendantOf(Common.Rooms) then return end
-
-		local itemConfig = itemsToTrack[model.Name]
-		if not itemConfig then return end
-
-		local highlights = {}
-		local firstPart = nil
-
-		for _, descendant in ipairs(model:GetDescendants()) do
-			if descendant:IsA("BasePart") then
-				if not firstPart then firstPart = descendant end
-
-				local highlight = Instance.new("Highlight")
-				highlight.Parent = descendant
-				highlight.FillColor = itemConfig.Color
-				highlight.OutlineColor = itemConfig.Color
-				highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-				table.insert(highlights, highlight)
+		local function cleanup(model)
+			if trackedData[model] then
+				for _, highlight in ipairs(trackedData[model].highlights) do
+					if highlight and highlight.Parent then highlight:Destroy() end
+				end
+				if trackedData[model].billboard and trackedData[model].billboard.Parent then trackedData[model].billboard:Destroy() end
+				if trackedData[model].connection then trackedData[model].connection:Disconnect() end
+				trackedData[model] = nil
 			end
 		end
 
-		if #highlights == 0 then return end
+		local function setup(model)
+			if not model or not model:IsA("Model") or trackedData[model] then return end
+			if not model:IsDescendantOf(targetFolder) then return end
 
-		local adorneePart = model.PrimaryPart or firstPart
-		local billboardGui = CreateBillboardGui({
-			Parent = adorneePart,
-			Adornee = adorneePart,
-			Text = model.Name,
-			TextColor = itemConfig.Color
-		})
+			local itemConfig = itemsToTrack[model.Name]
+			if not itemConfig then return end
 
-		local connection = model.AncestryChanged:Connect(function(_, parent)
-			if parent == nil or not model:IsDescendantOf(Common.Rooms) then
-				cleanupItem(model)
-			end
-		end)
-
-		itemData[model] = {
-			highlights = highlights,
-			billboard = billboardGui,
-			connection = connection
-		}
-	end
-
-	Logic.ItemESP = function(enable: boolean)
-		if enable then
-			for _, descendant in ipairs(Common.Rooms:GetDescendants()) do
-				if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
-					setupItem(descendant)
+			local highlights = {}
+			local firstPart = nil
+			for _, descendant in ipairs(model:GetDescendants()) do
+				if descendant:IsA("BasePart") then
+					if not firstPart then firstPart = descendant end
+					local highlight = Instance.new("Highlight")
+					highlight.Parent = descendant
+					highlight.FillColor = itemConfig.Color
+					highlight.OutlineColor = itemConfig.Color
+					highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+					table.insert(highlights, highlight)
 				end
 			end
 
-			workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
-				if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
-					task.wait()
-					setupItem(descendant)
+			if #highlights == 0 then return end
+
+			local adorneePart = model.PrimaryPart or firstPart
+			local billboardGui = CreateBillboardGui({ Parent = adorneePart, Adornee = adorneePart, Text = model.Name, TextColor = itemConfig.Color })
+			local connection = model.AncestryChanged:Connect(function(_, parent)
+				if parent == nil or not model:IsDescendantOf(targetFolder) then
+					cleanup(model)
 				end
 			end)
-		else
-			if workspaceConnection then
-				workspaceConnection:Disconnect()
-				workspaceConnection = nil
-			end
 
-			local modelsToClean = {}
-			for model in pairs(itemData) do
-				table.insert(modelsToClean, model)
-			end
-			for _, model in ipairs(modelsToClean) do
-				cleanupItem(model)
+			trackedData[model] = { highlights = highlights, billboard = billboardGui, connection = connection }
+		end
+
+		return function(enable: boolean)
+			if enable then
+				for _, descendant in ipairs(targetFolder:GetDescendants()) do
+					if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
+						setup(descendant)
+					end
+				end
+				workspaceConnection = Workspace.DescendantAdded:Connect(function(descendant)
+					if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
+						task.wait()
+						setup(descendant)
+					end
+				end)
+			else
+				if workspaceConnection then
+					workspaceConnection:Disconnect()
+					workspaceConnection = nil
+				end
+				local modelsToClean = {}
+				for model in pairs(trackedData) do
+					table.insert(modelsToClean, model)
+				end
+				for _, model in ipairs(modelsToClean) do
+					cleanup(model)
+				end
 			end
 		end
 	end
+
+	Logic.ItemESP = CreateModelESPLogic(Common.Rooms)
+	Logic.DropsESP = CreateModelESPLogic(Common.Drops)
 end
 
 debugNotify("initialized Logic")
@@ -453,6 +445,14 @@ do
 		Default = false,
 		Callback = function(value: boolean)
 			Logic.ItemESP(value)
+		end,
+	})
+
+	ESPGroupbox:AddToggle("DropsESP", {
+		Text = "Drops ESP",
+		Default = false,
+		Callback = function(value: boolean)
+			Logic.DropsESP(value)
 		end,
 	})
 end
