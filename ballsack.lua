@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.8" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.9" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -263,7 +263,9 @@ do
 	-- easy to add new item models here
 	local itemsToTrack = {
 		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
-		-- ["Chest"] = { Color = Color3.fromRGB(170, 85, 0) }
+		["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) },
+		["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) },
+		["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) },
 	}
 
 	local itemData = {}
@@ -282,6 +284,7 @@ do
 
 	local function setupItem(model)
 		if not model or not model:IsA("Model") or itemData[model] then return end
+		if not model:IsDescendantOf(Common.Rooms) then return end
 
 		local itemConfig = itemsToTrack[model.Name]
 		if not itemConfig then return end
@@ -313,7 +316,7 @@ do
 		})
 
 		local connection = model.AncestryChanged:Connect(function(_, parent)
-			if parent == nil then
+			if parent == nil or not model:IsDescendantOf(Common.Rooms) then
 				cleanupItem(model)
 			end
 		end)
@@ -327,7 +330,7 @@ do
 
 	Logic.ItemESP = function(enable: boolean)
 		if enable then
-			for _, descendant in ipairs(Workspace:GetDescendants()) do
+			for _, descendant in ipairs(Common.Rooms:GetDescendants()) do
 				if itemsToTrack[descendant.Name] and descendant:IsA("Model") then
 					setupItem(descendant)
 				end
