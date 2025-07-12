@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.1.7" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.1.8" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -372,7 +372,7 @@ task.spawn(function()
 
 		if lowestDoorNumber ~= math.huge then
 			local newRoom = lowestDoorNumber - 1
-			if newRoom ~= Common.CurrentRoom then
+			if newRoom > Common.CurrentRoom then
 				Common.CurrentRoom = newRoom
 				print(SCRIPT_ID .. ": Entered room " .. newRoom)
 			end
