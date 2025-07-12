@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.3" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.4" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -84,7 +84,8 @@ local ActiveESPs = {}
 local TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 
 -- fade-in/out effects for esp elements
-local function tweenInstance(instance, out, onComplete)
+local function tweenInstance(instance, out)
+	local onComplete = out and function() instance:Destroy() end or nil
 	if instance:IsA("Highlight") then
 		local goal = { FillTransparency = out and 1 or 0.5, OutlineTransparency = out and 1 or 0 }
 		if not out then instance.FillTransparency, instance.OutlineTransparency = 1, 1 end
@@ -92,27 +93,25 @@ local function tweenInstance(instance, out, onComplete)
 		if onComplete then tween.Completed:Connect(onComplete) end
 		tween:Play()
 	elseif instance:IsA("BillboardGui") then
-		local labels = {}
+		local labels, strokes = {}, {}
 		for _, child in ipairs(instance:GetChildren()) do
-			if child:IsA("TextLabel") then table.insert(labels, child) end
-		end
-
-		if #labels > 0 then
-			for i, label in ipairs(labels) do
-				local stroke = label:FindFirstChildOfClass("UIStroke")
-				local textGoal = { TextTransparency = out and 1 or 0 }
-				if not out then label.TextTransparency = 1 end
-				local textTween = TweenService:Create(label, TWEEN_INFO, textGoal)
-				if out and i == #labels and onComplete then textTween.Completed:Connect(onComplete) end
-				textTween:Play()
-				if stroke then
-					local strokeGoal = { Transparency = out and 1 or 0 }
-					if not out then stroke.Transparency = 1 end
-					TweenService:Create(stroke, TWEEN_INFO, strokeGoal):Play()
-				end
+			if child:IsA("TextLabel") then
+				table.insert(labels, child)
+				local stroke = child:FindFirstChildOfClass("UIStroke")
+				if stroke then table.insert(strokes, stroke) end
 			end
-		else
-			if out and onComplete then onComplete() end
+		end
+		for i, label in ipairs(labels) do
+			local textGoal = { TextTransparency = out and 1 or 0 }
+			if not out then label.TextTransparency = 1 end
+			local textTween = TweenService:Create(label, TWEEN_INFO, textGoal)
+			if out and i == #labels and onComplete then textTween.Completed:Connect(onComplete) end
+			textTween:Play()
+		end
+		for _, stroke in ipairs(strokes) do
+			local strokeGoal = { Transparency = out and 1 or 0 }
+			if not out then stroke.Transparency = 1 end
+			TweenService:Create(stroke, TWEEN_INFO, strokeGoal):Play()
 		end
 	end
 end
@@ -125,34 +124,16 @@ local function CreateBillboardGui(options: { Parent: Instance, Adornee: BasePart
 	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0)
 	billboardGui.Adornee = options.Adornee
 	billboardGui.Parent = options.Parent
-
 	local listLayout = Instance.new("UIListLayout")
-	listLayout.Parent = billboardGui
-	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
+	listLayout.Parent, listLayout.SortOrder, listLayout.HorizontalAlignment = billboardGui, Enum.SortOrder.LayoutOrder, Enum.HorizontalAlignment.Center
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, 0, 0, 30)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.TextScaled = true
-	nameLabel.Font = Enum.Font.SourceSansBold
-	nameLabel.Text = options.Text
-	nameLabel.TextColor3 = options.TextColor
-	nameLabel.Parent = billboardGui
+	nameLabel.Size, nameLabel.BackgroundTransparency, nameLabel.TextScaled, nameLabel.Font, nameLabel.Text, nameLabel.TextColor3, nameLabel.Parent = UDim2.new(1, 0, 0, 30), 1, true, Enum.Font.SourceSansBold, options.Text, options.TextColor, billboardGui
 	local nameStroke = Instance.new("UIStroke")
-	nameStroke.Color, nameStroke.Thickness, nameStroke.Parent = Color3.new(0, 0, 0), 1.5, nameLabel
-
+	nameStroke.Color, nameStroke.Thickness, nameStroke.Parent = Color3.new(0, 0, 0), 1, nameLabel
 	local distanceLabel = Instance.new("TextLabel")
-	distanceLabel.Size = UDim2.new(1, 0, 0, 20)
-	distanceLabel.BackgroundTransparency = 1
-	distanceLabel.TextScaled = true
-	distanceLabel.Font = Enum.Font.SourceSans
-	distanceLabel.Text = "[...]"
-	distanceLabel.TextColor3 = options.TextColor
-	distanceLabel.Parent = billboardGui
+	distanceLabel.Size, distanceLabel.BackgroundTransparency, distanceLabel.TextScaled, distanceLabel.Font, distanceLabel.Text, distanceLabel.TextColor3, distanceLabel.Parent = UDim2.new(1, 0, 0, 20), 1, true, Enum.Font.SourceSans, "[...]", options.TextColor, billboardGui
 	local distStroke = Instance.new("UIStroke")
-	distStroke.Color, distStroke.Thickness, distStroke.Parent = Color3.new(0, 0, 0), 1.5, distanceLabel
-
+	distStroke.Color, distStroke.Thickness, distStroke.Parent = Color3.new(0, 0, 0), 1, distanceLabel
 	return { gui = billboardGui, nameLabel = nameLabel, distanceLabel = distanceLabel }
 end
 
@@ -185,7 +166,7 @@ end
 -- Door ESP
 do
 	local doorData, roomConn = {}, nil
-	local function cleanupDoor(part) if doorData[part] then tweenInstance(doorData[part].highlight, true, function() doorData[part].highlight:Destroy() end) tweenInstance(doorData[part].billboard, true, function() doorData[part].billboard:Destroy() end) ActiveESPs[part] = nil doorData[part] = nil end end
+	local function cleanupDoor(part) if doorData[part] then tweenInstance(doorData[part].highlight, true) tweenInstance(doorData[part].billboard, true) ActiveESPs[part] = nil doorData[part] = nil end end
 	local function setupDoor(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then return end
 		local model = part.Parent
@@ -222,7 +203,7 @@ end
 -- Monster ESP
 do
 	local monsterData, workspaceConnection = {}, nil
-	local function cleanupMonster(part) if monsterData[part] then if part and part.Parent then part.Transparency = 1 end tweenInstance(monsterData[part].highlight, true, function() monsterData[part].highlight:Destroy() end) tweenInstance(monsterData[part].billboard, true, function() monsterData[part].billboard:Destroy() end) if monsterData[part].connection then monsterData[part].connection:Disconnect() end ActiveESPs[part] = nil monsterData[part] = nil end end
+	local function cleanupMonster(part) if monsterData[part] then if part and part.Parent then part.Transparency = 1 end tweenInstance(monsterData[part].highlight, true) tweenInstance(monsterData[part].billboard, true) if monsterData[part].connection then monsterData[part].connection:Disconnect() end ActiveESPs[part] = nil monsterData[part] = nil end end
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
 		part.Transparency = 0
@@ -249,7 +230,7 @@ end
 do
 	local function CreateESPLogic(scanFolder: Instance, itemsToTrack: table, isRoomSpecific: boolean)
 		local masterList, visibleList, roomConn, descConn = {}, {}, nil, nil
-		local function cleanup(model) if visibleList[model] then tweenInstance(visibleList[model].highlight, true, function() visibleList[model].highlight:Destroy() end) tweenInstance(visibleList[model].billboard, true, function() visibleList[model].billboard:Destroy() end) ActiveESPs[model] = nil visibleList[model] = nil end end
+		local function cleanup(model) if visibleList[model] then tweenInstance(visibleList[model].highlight, true) tweenInstance(visibleList[model].billboard, true) ActiveESPs[model] = nil visibleList[model] = nil end end
 		local function setup(model)
 			if visibleList[model] then return end
 			local itemConfig = itemsToTrack[model.Name]
