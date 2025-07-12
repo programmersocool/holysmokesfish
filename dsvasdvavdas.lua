@@ -5,7 +5,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.6.6" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "6.6.9" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -430,7 +430,7 @@ do
 	Logic.GoldESP = CreateESPLogic(Common.Rooms, goldItems, false)
 end
 
--- Anti-Screech, Speed, Prompts, FOV
+-- Anti-Screech, Speed, Prompts, FOV, Animation
 do
 	Logic.AntiScreech = function(enable: boolean)
 		local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech")
@@ -440,23 +440,45 @@ do
 	end
 	local player = Players.LocalPlayer
 	local originalSpeed, speedEnabled, currentSpeed, speedConn = 16, false, 16, nil
+	local twerkEnabled, twerkAnimTrack = false, nil
+	local TWERK_ANIM_ID = "rbxassetid://12874447851"
+
+	local function stopTwerk()
+		if twerkAnimTrack then
+			twerkAnimTrack:Stop()
+			twerkAnimTrack:Destroy()
+			twerkAnimTrack = nil
+		end
+	end
+
+	local function playTwerk()
+		stopTwerk()
+		local char = player.Character
+		if not char then return end
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if not humanoid then return end
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if not animator then return end
+		local anim = Instance.new("Animation")
+		anim.AnimationId = TWERK_ANIM_ID
+		twerkAnimTrack = animator:LoadAnimation(anim)
+		twerkAnimTrack.Looped = true
+		twerkAnimTrack:Play()
+		anim:Destroy()
+	end
+
 	local function updateSpeed()
 		local char = player.Character
-		if not char then
-			return
-		end
+		if not char then return end
 		local hum = char:FindFirstChildOfClass("Humanoid")
-		if not hum then
-			return
-		end
+		if not hum then return end
 		hum.WalkSpeed = speedEnabled and currentSpeed or originalSpeed
 	end
+
 	local function onCharacter(char)
 		local hum = char:WaitForChild("Humanoid")
 		originalSpeed = hum.WalkSpeed
-		if speedConn then
-			speedConn:Disconnect()
-		end
+		if speedConn then speedConn:Disconnect() end
 		speedConn = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
 			if speedEnabled and hum.WalkSpeed ~= currentSpeed then
 				hum.WalkSpeed = currentSpeed
@@ -464,21 +486,32 @@ do
 		end)
 		task.wait(0.1)
 		updateSpeed()
+		if twerkEnabled then
+			playTwerk()
+		end
 	end
+
 	player.CharacterAdded:Connect(onCharacter)
-	if player.Character then
-		onCharacter(player.Character)
-	end
+	player.CharacterRemoving:Connect(stopTwerk)
+	if player.Character then onCharacter(player.Character) end
+
 	Logic.SetSpeed = function(enable: boolean)
 		speedEnabled = enable
 		updateSpeed()
 	end
 	Logic.SetSpeedValue = function(value: number)
 		currentSpeed = value
-		if speedEnabled then
-			updateSpeed()
+		if speedEnabled then updateSpeed() end
+	end
+	Logic.Twerk = function(enable: boolean)
+		twerkEnabled = enable
+		if enable then
+			playTwerk()
+		else
+			stopTwerk()
 		end
 	end
+
 	local promptData, promptConns = {}, {}
 	local function cleanupPrompt(p)
 		if promptData[p] and p and p.Parent then
@@ -487,9 +520,7 @@ do
 		end
 	end
 	local function setupPrompt(p)
-		if not p or not p:IsA("ProximityPrompt") or promptData[p] then
-			return
-		end
+		if not p or not p:IsA("ProximityPrompt") or promptData[p] then return end
 		promptData[p] = { originalDuration = p.HoldDuration }
 		p.HoldDuration = 0
 	end
@@ -497,31 +528,22 @@ do
 		if enable then
 			for _, container in ipairs({ Common.Rooms, Common.Drops }) do
 				for _, d in ipairs(container:GetDescendants()) do
-					if d:IsA("ProximityPrompt") then
-						setupPrompt(d)
-					end
+					if d:IsA("ProximityPrompt") then setupPrompt(d) end
 				end
 				local conn = container.DescendantAdded:Connect(function(d)
-					if d:IsA("ProximityPrompt") then
-						setupPrompt(d)
-					end
+					if d:IsA("ProximityPrompt") then setupPrompt(d) end
 				end)
 				table.insert(promptConns, conn)
 			end
 		else
-			for _, conn in ipairs(promptConns) do
-				conn:Disconnect()
-			end
+			for _, conn in ipairs(promptConns) do conn:Disconnect() end
 			promptConns = {}
 			local toClean = {}
-			for p in pairs(promptData) do
-				table.insert(toClean, p)
-			end
-			for _, p in ipairs(toClean) do
-				cleanupPrompt(p)
-			end
+			for p in pairs(promptData) do table.insert(toClean, p) end
+			for _, p in ipairs(toClean) do cleanupPrompt(p) end
 		end
 	end
+
 	local clipData, clipConns = {}, {}
 	local function cleanupClip(p)
 		if clipData[p] and p and p.Parent then
@@ -530,9 +552,7 @@ do
 		end
 	end
 	local function setupClip(p)
-		if not p or not p:IsA("ProximityPrompt") or clipData[p] then
-			return
-		end
+		if not p or not p:IsA("ProximityPrompt") or clipData[p] then return end
 		clipData[p] = { originalLineOfSight = p.RequiresLineOfSight }
 		p.RequiresLineOfSight = false
 	end
@@ -540,38 +560,25 @@ do
 		if enable then
 			for _, container in ipairs({ Common.Rooms, Common.Drops }) do
 				for _, d in ipairs(container:GetDescendants()) do
-					if d:IsA("ProximityPrompt") then
-						setupClip(d)
-					end
+					if d:IsA("ProximityPrompt") then setupClip(d) end
 				end
 				local conn = container.DescendantAdded:Connect(function(d)
-					if d:IsA("ProximityPrompt") then
-						setupClip(d)
-					end
+					if d:IsA("ProximityPrompt") then setupClip(d) end
 				end)
 				table.insert(clipConns, conn)
 			end
 		else
-			for _, conn in ipairs(clipConns) do
-				conn:Disconnect()
-			end
+			for _, conn in ipairs(clipConns) do conn:Disconnect() end
 			clipConns = {}
 			local toClean = {}
-			for p in pairs(clipData) do
-				table.insert(toClean, p)
-			end
-			for _, p in ipairs(toClean) do
-				cleanupClip(p)
-			end
+			for p in pairs(clipData) do table.insert(toClean, p) end
+			for _, p in ipairs(toClean) do cleanupClip(p) end
 		end
 	end
+
 	local originalFOV = workspace.CurrentCamera.FieldOfView
-	Logic.SetFOV = function(v)
-		workspace.CurrentCamera.FieldOfView = v
-	end
-	Obsidian:OnUnload(function()
-		workspace.CurrentCamera.FieldOfView = originalFOV
-	end)
+	Logic.SetFOV = function(v) workspace.CurrentCamera.FieldOfView = v end
+	Obsidian:OnUnload(function() workspace.CurrentCamera.FieldOfView = originalFOV end)
 end
 
 -- room and ESP distance tracker
@@ -673,6 +680,9 @@ do
 	end })
 	PlayerGroupbox:AddToggle("ClipPrompts", { Text = "Clip Prompts", Default = false, Callback = function(v)
 		Logic.ClipPrompts(v)
+	end })
+	PlayerGroupbox:AddToggle("Twerk", { Text = "Twerk", Default = false, Callback = function(v)
+		Logic.Twerk(v)
 	end })
 	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v)
 		Logic.SetFOV(v)
