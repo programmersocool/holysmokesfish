@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.1" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.2" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 -- Custom Signal for events
 local Signal = {}
@@ -79,98 +80,90 @@ debugNotify("loaded libraries")
 -----------------------------------
 
 local Logic = {}
+local ActiveESPs = {}
+local TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 
--- fade-in effect for esp elements
-local function fadeIn(instance)
-	local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+-- fade-in/out effects for esp elements
+local function tweenInstance(instance, out, onComplete)
+	local goal = {}
 	if instance:IsA("Highlight") then
-		instance.FillTransparency = 1
-		instance.OutlineTransparency = 1
-		TweenService:Create(instance, tweenInfo, { FillTransparency = 0, OutlineTransparency = 0 }):Play()
+		goal.FillTransparency = out and 1 or 0.5
+		goal.OutlineTransparency = out and 1 or 0
+		if not out then instance.FillTransparency, instance.OutlineTransparency = 1, 1 end
 	elseif instance:IsA("BillboardGui") then
 		local label = instance:FindFirstChildOfClass("TextLabel")
 		if label then
 			local stroke = label:FindFirstChildOfClass("UIStroke")
-			label.TextTransparency = 1
-			if stroke then stroke.Transparency = 1 end
-			local tween = TweenService:Create(label, tweenInfo, { TextTransparency = 0 })
-			tween:Play()
-			if stroke then
-				local strokeTween = TweenService:Create(stroke, tweenInfo, { Transparency = 0 })
-				strokeTween:Play()
-			end
+			goal.TextTransparency = out and 1 or 0
+			if not out then label.TextTransparency = 1 if stroke then stroke.Transparency = 1 end end
+			if stroke then TweenService:Create(stroke, TWEEN_INFO, { Transparency = out and 1 or 0 }):Play() end
 		end
 	end
+	local tween = TweenService:Create(instance, TWEEN_INFO, goal)
+	if onComplete then tween.Completed:Connect(onComplete) end
+	tween:Play()
 end
 
 -- a reusable function to create billboard guis for esp
-local function CreateBillboardGui(options: {
-	Parent: Instance,
-	Adornee: BasePart,
-	Text: string,
-	TextColor: Color3,
-	StudsOffset: Vector3?
-})
+local function CreateBillboardGui(options: { Parent: Instance, Adornee: BasePart, Text: string, TextColor: Color3, StudsOffset: Vector3? })
 	local billboardGui = Instance.new("BillboardGui")
-	billboardGui.Size = UDim2.new(0, 200, 0, 50)
+	billboardGui.Size = UDim2.new(0, 200, 0, 70)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0)
 	billboardGui.Adornee = options.Adornee
 	billboardGui.Parent = options.Parent
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Size = UDim2.new(1, 0, 1, 0)
-	textLabel.BackgroundTransparency = 1
-	textLabel.TextScaled = false
-	textLabel.TextSize = 20
-	textLabel.Font = Enum.Font.SourceSansBold
-	textLabel.Text = options.Text
-	textLabel.TextColor3 = options.TextColor
-	textLabel.Parent = billboardGui
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.new(0, 0, 0)
-	stroke.Thickness = 1.5
-	stroke.Parent = textLabel
-	return billboardGui
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Parent = billboardGui
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 0, 30)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextScaled = true
+	nameLabel.Font = Enum.Font.SourceSansBold
+	nameLabel.Text = options.Text
+	nameLabel.TextColor3 = options.TextColor
+	nameLabel.Parent = billboardGui
+	local nameStroke = Instance.new("UIStroke")
+	nameStroke.Color, nameStroke.Thickness, nameStroke.Parent = Color3.new(0, 0, 0), 1.5, nameLabel
+
+	local distanceLabel = Instance.new("TextLabel")
+	distanceLabel.Size = UDim2.new(1, 0, 0, 20)
+	distanceLabel.BackgroundTransparency = 1
+	distanceLabel.TextScaled = true
+	distanceLabel.Font = Enum.Font.SourceSans
+	distanceLabel.Text = "[...]"
+	distanceLabel.TextColor3 = options.TextColor
+	distanceLabel.Parent = billboardGui
+	local distStroke = Instance.new("UIStroke")
+	distStroke.Color, distStroke.Thickness, distStroke.Parent = Color3.new(0, 0, 0), 1.5, distanceLabel
+
+	return { gui = billboardGui, nameLabel = nameLabel, distanceLabel = distanceLabel }
 end
 
 
 -- Fullbright
 do
-	local ogBrightness = Lighting.Brightness
-	local ogAmbient = Lighting.Ambient
-	local roomData = {}
-	local roomAddedConnection = nil
-	local fullbrightEnabled = false
-
+	local ogBrightness, ogAmbient, roomData, roomAddedConnection, fullbrightEnabled = Lighting.Brightness, Lighting.Ambient, {}, nil, false
 	local function setRoomFullbright(room)
 		if room:IsA("Model") and not roomData[room] then
-			local conn = room:GetAttributeChangedSignal("Ambient"):Connect(function()
-				if fullbrightEnabled and room:GetAttribute("Ambient") ~= Color3.new(1, 1, 1) then
-					room:SetAttribute("Ambient", Color3.new(1, 1, 1))
-				end
-			end)
+			local conn = room:GetAttributeChangedSignal("Ambient"):Connect(function() if fullbrightEnabled and room:GetAttribute("Ambient") ~= Color3.new(1, 1, 1) then room:SetAttribute("Ambient", Color3.new(1, 1, 1)) end end)
 			roomData[room] = { original = room:GetAttribute("Ambient"), connection = conn }
 			room:SetAttribute("Ambient", Color3.new(1, 1, 1))
 		end
 	end
-
 	Logic.Fullbright = function(enable: boolean)
 		fullbrightEnabled = enable
 		if enable then
-			Lighting.Brightness = 3
-			Lighting.Ambient = Color3.new(1, 1, 1)
+			Lighting.Brightness, Lighting.Ambient = 3, Color3.new(1, 1, 1)
 			for _, room in ipairs(Common.Rooms:GetChildren()) do setRoomFullbright(room) end
 			roomAddedConnection = Common.Rooms.ChildAdded:Connect(setRoomFullbright)
 		else
-			Lighting.Brightness = ogBrightness
-			Lighting.Ambient = ogAmbient
+			Lighting.Brightness, Lighting.Ambient = ogBrightness, ogAmbient
 			if roomAddedConnection then roomAddedConnection:Disconnect() roomAddedConnection = nil end
-			for room, data in pairs(roomData) do
-				if room and room.Parent then
-					data.connection:Disconnect()
-					if data.original then room:SetAttribute("Ambient", data.original) end
-				end
-			end
+			for room, data in pairs(roomData) do if room and room.Parent then data.connection:Disconnect() if data.original then room:SetAttribute("Ambient", data.original) end end end
 			roomData = {}
 		end
 	end
@@ -178,136 +171,72 @@ end
 
 -- Door ESP
 do
-	local doorData = {}
-	local workspaceConnection = nil
-
-	local function cleanupDoor(part)
-		if doorData[part] then
-			if doorData[part].highlight and doorData[part].highlight.Parent then doorData[part].highlight:Destroy() end
-			if doorData[part].billboard and doorData[part].billboard.Parent then doorData[part].billboard:Destroy() end
-			if doorData[part].connection then doorData[part].connection:Disconnect() end
-			doorData[part] = nil
-		end
-	end
-
+	local doorData, roomConn = {}, nil
+	local function cleanupDoor(part) if doorData[part] then tweenInstance(doorData[part].highlight, true, function() doorData[part].highlight:Destroy() end) tweenInstance(doorData[part].billboard, true, function() doorData[part].billboard:Destroy() end) ActiveESPs[part] = nil doorData[part] = nil end end
 	local function setupDoor(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then return end
 		local model = part.Parent
 		if not (model:IsA("Model") and model.Name == "Door") then return end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent = part
-		highlight.FillColor = Color3.fromRGB(0, 255, 0)
-		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
-		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = part, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then doorText = "Door: " .. sign.Stinker.Text end
-		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
-		local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function() if not part.CanCollide then cleanupDoor(part) end end)
-		doorData[part] = { highlight = highlight, billboard = billboardGui, connection = connection }
-		fadeIn(highlight)
-		fadeIn(billboardGui)
+		local guiElements = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
+		doorData[part] = { highlight = highlight, billboard = guiElements.gui }
+		ActiveESPs[part] = { adornee = part, distanceLabel = guiElements.distanceLabel }
+		tweenInstance(highlight, false)
+		tweenInstance(guiElements.gui, false)
 	end
-
-	Logic.DoorESP = function(enable: boolean)
-		if enable then
-			for _, d in ipairs(Workspace:GetDescendants()) do if d.Name == "Door" and d:IsA("BasePart") then setupDoor(d) end end
-			workspaceConnection = Workspace.DescendantAdded:Connect(function(d) if d.Name == "Door" and d:IsA("BasePart") then task.wait() setupDoor(d) end end)
-		else
-			if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end
-			local toClean = {}
-			for p in pairs(doorData) do table.insert(toClean, p) end
-			for _, p in ipairs(toClean) do cleanupDoor(p) end
+	local function updateDoors()
+		for part, _ in pairs(doorData) do cleanupDoor(part) end
+		for _, d in ipairs(Workspace:GetDescendants()) do
+			if d.Name == "Door" and d:IsA("BasePart") then
+				local sign = d.Parent and d.Parent:FindFirstChild("Sign")
+				if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
+					local num = tonumber(sign.Stinker.Text)
+					if num and (num == Common.CurrentRoom or num == Common.CurrentRoom + 1) then setupDoor(d) end
+				end
+			end
 		end
+	end
+	Logic.DoorESP = function(enable: boolean)
+		if enable then roomConn = Common.RoomChanged:Connect(updateDoors) updateDoors()
+		else if roomConn then Common.RoomChanged:Disconnect(roomConn) roomConn = nil end for p, _ in pairs(doorData) do cleanupDoor(p) end end
 	end
 end
 
 -- Monster ESP
 do
-	local monsterData = {}
-	local workspaceConnection = nil
-
-	local function cleanupMonster(part)
-		if monsterData[part] then
-			if part and part.Parent then part.Transparency = 1 end
-			if monsterData[part].highlight then monsterData[part].highlight:Destroy() end
-			if monsterData[part].billboard then monsterData[part].billboard:Destroy() end
-			if monsterData[part].connection then monsterData[part].connection:Disconnect() end
-			monsterData[part] = nil
-		end
-	end
-
+	local monsterData, workspaceConnection = {}, nil
+	local function cleanupMonster(part) if monsterData[part] then if part and part.Parent then part.Transparency = 1 end tweenInstance(monsterData[part].highlight, true, function() monsterData[part].highlight:Destroy() end) tweenInstance(monsterData[part].billboard, true, function() monsterData[part].billboard:Destroy() end) if monsterData[part].connection then monsterData[part].connection:Disconnect() end ActiveESPs[part] = nil monsterData[part] = nil end end
 	local function setupMonster(part)
 		if not part or not part.Parent or not part:IsA("BasePart") or monsterData[part] then return end
 		part.Transparency = 0
 		local monsterText = "I dont know dude"
 		if part.Parent.Name == "AmbushMoving" then monsterText = "Ambush" elseif part.Parent.Name == "RushMoving" then monsterText = "Rush" end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent = part
-		highlight.FillColor = Color3.fromRGB(255, 0, 0)
-		highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = part, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop
+		local guiElements = CreateBillboardGui({ Parent = part, Adornee = part, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
 		local connection = part.AncestryChanged:Connect(function(_, parent) if parent == nil then cleanupMonster(part) end end)
-		monsterData[part] = { highlight = highlight, billboard = billboardGui, connection = connection }
-		fadeIn(highlight)
-		fadeIn(billboardGui)
+		monsterData[part] = { highlight = highlight, billboard = guiElements.gui, connection = connection }
+		ActiveESPs[part] = { adornee = part, distanceLabel = guiElements.distanceLabel }
+		tweenInstance(highlight, false)
+		tweenInstance(guiElements.gui, false)
 	end
-
 	Logic.MonsterESP = function(enable: boolean)
 		if enable then
 			for _, d in ipairs(Workspace:GetDescendants()) do if d.Name == "RushNew" and d:IsA("BasePart") then setupMonster(d) end end
 			workspaceConnection = Workspace.DescendantAdded:Connect(function(d) if d.Name == "RushNew" and d:IsA("BasePart") then task.wait() setupMonster(d) end end)
-		else
-			if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end
-			local toClean = {}
-			for p in pairs(monsterData) do table.insert(toClean, p) end
-			for _, p in ipairs(toClean) do cleanupMonster(p) end
-		end
+		else if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end for p, _ in pairs(monsterData) do cleanupMonster(p) end end
 	end
 end
 
 -- ESP Factories
 do
-	-- for esp in a static folder (e.g. Drops)
-	local function CreateStaticESPLogic(targetFolder: Instance, itemsToTrack: table)
-		local trackedData = {}
-		local connection = nil
-		local function cleanup(model) if trackedData[model] then if trackedData[model].highlight and trackedData[model].highlight.Parent then trackedData[model].highlight:Destroy() end if trackedData[model].billboard and trackedData[model].billboard.Parent then trackedData[model].billboard:Destroy() end if trackedData[model].connection then trackedData[model].connection:Disconnect() end trackedData[model] = nil end end
-		local function setup(model)
-			if not model or not model:IsA("Model") or trackedData[model] or not model:IsDescendantOf(targetFolder) then return end
-			local itemConfig = itemsToTrack[model.Name]
-			if not itemConfig then return end
-			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
-			if not firstPart then return end
-			local highlight = Instance.new("Highlight")
-			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop
-			local adornee = model.PrimaryPart or firstPart
-			local espText = itemConfig.Text or model.Name
-			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
-			local conn = model.AncestryChanged:Connect(function(_, p) if p == nil or not model:IsDescendantOf(targetFolder) then cleanup(model) end end)
-			trackedData[model] = { highlight = highlight, billboard = gui, connection = conn }
-			fadeIn(highlight)
-			fadeIn(gui)
-		end
-		return function(enable: boolean)
-			if enable then
-				for _, d in ipairs(targetFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then task.spawn(setup, d) end end
-				connection = targetFolder.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then task.wait() setup(d) end end)
-			else
-				if connection then connection:Disconnect() connection = nil end
-				local toClean = {}
-				for m in pairs(trackedData) do table.insert(toClean, m) end
-				for _, m in ipairs(toClean) do cleanup(m) end
-			end
-		end
-	end
-
-	-- for esp that should only appear in the current room
-	local function CreateCurrentRoomESPLogic(scanFolder: Instance, itemsToTrack: table)
-		local masterList, visibleList = {}, {}
-		local roomConn, descConn = nil, nil
-		local function cleanup(model) if visibleList[model] then if visibleList[model].highlight and visibleList[model].highlight.Parent then visibleList[model].highlight:Destroy() end if visibleList[model].billboard and visibleList[model].billboard.Parent then visibleList[model].billboard:Destroy() end visibleList[model] = nil end end
+	local function CreateESPLogic(scanFolder: Instance, itemsToTrack: table, isRoomSpecific: boolean)
+		local masterList, visibleList, roomConn, descConn = {}, {}, nil, nil
+		local function cleanup(model) if visibleList[model] then tweenInstance(visibleList[model].highlight, true, function() visibleList[model].highlight:Destroy() end) tweenInstance(visibleList[model].billboard, true, function() visibleList[model].billboard:Destroy() end) ActiveESPs[model] = nil visibleList[model] = nil end end
 		local function setup(model)
 			if visibleList[model] then return end
 			local itemConfig = itemsToTrack[model.Name]
@@ -315,26 +244,24 @@ do
 			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
 			if not firstPart then return end
 			local highlight = Instance.new("Highlight")
-			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop, 0.5
 			local adornee = model.PrimaryPart or firstPart
 			local espText = itemConfig.Text or model.Name
-			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
-			visibleList[model] = { highlight = highlight, billboard = gui }
-			fadeIn(highlight)
-			fadeIn(gui)
+			local guiElements = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
+			visibleList[model] = { highlight = highlight, billboard = guiElements.gui }
+			ActiveESPs[model] = { adornee = adornee, distanceLabel = guiElements.distanceLabel }
+			tweenInstance(highlight, false)
+			tweenInstance(guiElements.gui, false)
 		end
 		local function updateVisibility()
 			local currentRoomModel = Common.GetCurrentRoomModel()
-			for model, _ in pairs(masterList) do
-				if model and model.Parent and currentRoomModel and model:IsDescendantOf(currentRoomModel) then setup(model) else cleanup(model) end
-			end
+			for model, _ in pairs(masterList) do if model and model.Parent and currentRoomModel and model:IsDescendantOf(currentRoomModel) then setup(model) else cleanup(model) end end
 		end
 		return function(enable: boolean)
 			if enable then
-				for _, d in ipairs(scanFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true end end
-				descConn = scanFolder.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true updateVisibility() end end)
-				roomConn = Common.RoomChanged:Connect(updateVisibility)
-				updateVisibility()
+				for _, d in ipairs(scanFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then if isRoomSpecific then masterList[d] = true else setup(d) end end end
+				descConn = scanFolder.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then if isRoomSpecific then masterList[d] = true updateVisibility() else setup(d) end end end)
+				if isRoomSpecific then roomConn = Common.RoomChanged:Connect(updateVisibility) updateVisibility() end
 			else
 				if roomConn then Common.RoomChanged:Disconnect(roomConn) roomConn = nil end
 				if descConn then descConn:Disconnect() descConn = nil end
@@ -343,37 +270,28 @@ do
 			end
 		end
 	end
-
 	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local books = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" } }
 	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
-
-	Logic.ItemESP = CreateCurrentRoomESPLogic(Common.Rooms, items)
-	Logic.DropsESP = CreateStaticESPLogic(Common.Drops, items)
-	Logic.BookESP = CreateCurrentRoomESPLogic(Common.Rooms, books)
-	Logic.HidingESP = CreateCurrentRoomESPLogic(Common.Rooms, hidingSpots)
-	Logic.LeverESP = CreateCurrentRoomESPLogic(Common.Rooms, levers)
+	Logic.ItemESP = CreateESPLogic(Common.Rooms, items, true)
+	Logic.DropsESP = CreateESPLogic(Common.Drops, items, false)
+	Logic.BookESP = CreateESPLogic(Common.Rooms, books, true)
+	Logic.HidingESP = CreateESPLogic(Common.Rooms, hidingSpots, true)
+	Logic.LeverESP = CreateESPLogic(Common.Rooms, levers, true)
 end
 
--- Anti-Screech
+-- Anti-Screech, Speed, Prompts, FOV
 do
-	Logic.AntiScreech = function(enable: boolean)
-		local remote = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech")
-		if remote then remote.Name = enable and "notscreech" or "Screech" end
-	end
-end
-
--- Speed
-do
+	Logic.AntiScreech = function(enable: boolean) local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech") if r then r.Name = enable and "notscreech" or "Screech" end end
 	local player = Players.LocalPlayer
-	local originalSpeed, speedEnabled, currentSpeed, speedConnection = 16, false, 16, nil
+	local originalSpeed, speedEnabled, currentSpeed, speedConn = 16, false, 16, nil
 	local function updateSpeed() local char = player.Character if not char then return end local hum = char:FindFirstChildOfClass("Humanoid") if not hum then return end hum.WalkSpeed = speedEnabled and currentSpeed or originalSpeed end
 	local function onCharacter(char)
 		local hum = char:WaitForChild("Humanoid")
 		originalSpeed = hum.WalkSpeed
-		if speedConnection then speedConnection:Disconnect() end
-		speedConnection = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function() if speedEnabled and hum.WalkSpeed ~= currentSpeed then hum.WalkSpeed = currentSpeed end end)
+		if speedConn then speedConn:Disconnect() end
+		speedConn = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function() if speedEnabled and hum.WalkSpeed ~= currentSpeed then hum.WalkSpeed = currentSpeed end end)
 		task.wait(0.1)
 		updateSpeed()
 	end
@@ -381,27 +299,21 @@ do
 	if player.Character then onCharacter(player.Character) end
 	Logic.SetSpeed = function(enable: boolean) speedEnabled = enable updateSpeed() end
 	Logic.SetSpeedValue = function(value: number) currentSpeed = value if speedEnabled then updateSpeed() end end
-end
-
--- Instant Proximity Prompts
-do
-	local promptData, workspaceConnection = {}, nil
-	local function cleanupPrompt(prompt) if promptData[prompt] and prompt and prompt.Parent then prompt.HoldDuration = promptData[prompt].originalDuration promptData[prompt] = nil end end
-	local function setupPrompt(prompt) if not prompt or not prompt:IsA("ProximityPrompt") or promptData[prompt] then return end promptData[prompt] = { originalDuration = prompt.HoldDuration } prompt.HoldDuration = 0 end
+	local promptData, promptConn = {}, nil
+	local function cleanupPrompt(p) if promptData[p] and p and p.Parent then p.HoldDuration = promptData[p].originalDuration promptData[p] = nil end end
+	local function setupPrompt(p) if not p or not p:IsA("ProximityPrompt") or promptData[p] then return end promptData[p] = { originalDuration = p.HoldDuration } p.HoldDuration = 0 end
 	Logic.InstantPrompts = function(enable: boolean)
 		if enable then
 			for _, d in ipairs(Workspace:GetDescendants()) do if d:IsA("ProximityPrompt") then setupPrompt(d) end end
-			workspaceConnection = Workspace.DescendantAdded:Connect(function(d) if d:IsA("ProximityPrompt") then setupPrompt(d) end end)
-		else
-			if workspaceConnection then workspaceConnection:Disconnect() workspaceConnection = nil end
-			local toClean = {}
-			for p in pairs(promptData) do table.insert(toClean, p) end
-			for _, p in ipairs(toClean) do cleanupPrompt(p) end
-		end
+			promptConn = Workspace.DescendantAdded:Connect(function(d) if d:IsA("ProximityPrompt") then setupPrompt(d) end end)
+		else if promptConn then promptConn:Disconnect() promptConn = nil end local toClean = {} for p in pairs(promptData) do table.insert(toClean, p) end for _, p in ipairs(toClean) do cleanupPrompt(p) end end
 	end
+	local originalFOV = workspace.CurrentCamera.FieldOfView
+	Logic.SetFOV = function(v) workspace.CurrentCamera.FieldOfView = v end
+	Obsidian:OnUnload(function() workspace.CurrentCamera.FieldOfView = originalFOV end)
 end
 
--- Room Tracker
+-- Room & ESP Distance Tracker
 task.spawn(function()
 	local trackedDoors = {}
 	local function cleanupTrackerDoor(part) if trackedDoors[part] then trackedDoors[part].ancestryConn:Disconnect() trackedDoors[part].collideConn:Disconnect() trackedDoors[part] = nil end end
@@ -413,11 +325,7 @@ task.spawn(function()
 				local stinker = sign and sign:FindFirstChild("Stinker")
 				if stinker and stinker:IsA("TextLabel") then
 					local roomNum = tonumber(stinker.Text)
-					if roomNum and roomNum > Common.CurrentRoom then
-						Common.CurrentRoom = roomNum
-						print(SCRIPT_ID .. ": Entered room " .. roomNum)
-						Common.RoomChanged:Fire()
-					end
+					if roomNum and roomNum > Common.CurrentRoom then Common.CurrentRoom = roomNum print(SCRIPT_ID .. ": Entered room " .. roomNum) Common.RoomChanged:Fire() end
 				end
 			end
 		end)
@@ -426,6 +334,17 @@ task.spawn(function()
 	end
 	for _, d in ipairs(Workspace:GetDescendants()) do setupTrackerDoor(d) end
 	Workspace.DescendantAdded:Connect(setupTrackerDoor)
+	RunService.RenderStepped:Connect(function()
+		local playerChar = Players.LocalPlayer.Character
+		if not playerChar then return end
+		local playerPos = playerChar.PrimaryPart.Position
+		for _, esp in pairs(ActiveESPs) do
+			if esp.adornee and esp.adornee.Parent then
+				local dist = math.round((playerPos - esp.adornee.Position).Magnitude)
+				esp.distanceLabel.Text = "[" .. dist .. " studs]"
+			end
+		end
+	end)
 end)
 
 debugNotify("initialized Logic")
@@ -461,6 +380,7 @@ do
 	PlayerGroupbox:AddToggle("EnableSpeed", { Text = "Enable Speed", Default = false, Callback = function(v) Logic.SetSpeed(v) end })
 	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v) Logic.SetSpeedValue(v) end })
 	PlayerGroupbox:AddToggle("InstantPrompts", { Text = "Instant Prompts", Default = false, Callback = function(v) Logic.InstantPrompts(v) end })
+	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v) Logic.SetFOV(v) end })
 end
 debugNotify("created Tabs.Main")
 
