@@ -1,4 +1,6 @@
-if not game:IsLoaded() then game.Loaded:Wait() end
+if not game:IsLoaded() then
+	game.Loaded:Wait()
+end
 
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
@@ -350,7 +352,12 @@ do
 			local highlight = Instance.new("Highlight")
 			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop, 0.5
 			local adornee = model.PrimaryPart or firstPart
-			local espText = itemConfig.Text or model.Name
+			local espText
+			if itemConfig.TextGenerator then
+				espText = itemConfig.TextGenerator(model)
+			else
+				espText = itemConfig.Text or model.Name
+			end
 			local guiElements = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
 			visibleList[model] = { highlight = highlight, billboard = guiElements.gui }
 			ActiveESPs[model] = { adornee = adornee, distanceLabel = guiElements.distanceLabel }
@@ -412,11 +419,15 @@ do
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local objectives = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" }, ["LiveBreakerPolePickup"] = { Color = Color3.fromRGB(150, 150, 150), Text = "Breaker" } }
 	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
-	Logic.ItemESP = CreateESPLogic(Common.Rooms, items, true)
+	local goldItems = { ["GoldPile"] = { Color = Color3.fromRGB(255, 255, 0), TextGenerator = function(model)
+		return "Gold: " .. tostring(model:GetAttribute("GoldValue") or 0)
+	end } }
+	Logic.ItemESP = CreateESPLogic(Common.Rooms, items, false)
 	Logic.DropsESP = CreateESPLogic(Common.Drops, items, false)
 	Logic.ObjectivesESP = CreateESPLogic(Common.Rooms, objectives, true)
 	Logic.HidingESP = CreateESPLogic(Common.Rooms, hidingSpots, true)
 	Logic.LeverESP = CreateESPLogic(Common.Rooms, levers, true)
+	Logic.GoldESP = CreateESPLogic(Common.Rooms, goldItems, false)
 end
 
 -- Anti-Screech, Speed, Prompts, FOV
@@ -650,12 +661,15 @@ do
 	ESPGroupbox:AddToggle("DropsESP", { Text = "Drops ESP", Default = false, Callback = function(v)
 		Logic.DropsESP(v)
 	end })
+	ESPGroupbox:AddToggle("GoldESP", { Text = "Gold ESP", Default = false, Callback = function(v)
+		Logic.GoldESP(v)
+	end })
 	ESPGroupbox:AddToggle("HidingESP", { Text = "Hiding Spot ESP", Default = false, Callback = function(v)
 		Logic.HidingESP(v)
 	end })
 	ESPGroupbox:AddToggle("ObjectivesESP", { Text = "Objective ESP", Default = false, Callback = function(v)
 		Logic.ObjectivesESP(v)
-	end }) -- fixed bug: was Logic.BookESP(v)
+	end })
 	ESPGroupbox:AddToggle("LeverESP", { Text = "Lever ESP", Default = false, Callback = function(v)
 		Logic.LeverESP(v)
 	end })
@@ -701,3 +715,6 @@ debugNotify("initialized SaveManager")
 
 -- Done!
 debugNotify("loading complete!")
+
+task.wait(10)
+print("freakbob is going to get you")
