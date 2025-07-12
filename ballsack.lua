@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.1.9" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.0" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -12,18 +12,44 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+-- Custom Signal for events
+local Signal = {}
+Signal.__index = Signal
+function Signal.new()
+	local self = setmetatable({}, Signal)
+	self.connections = {}
+	return self
+end
+function Signal:Connect(func)
+	local conn = { func = func }
+	table.insert(self.connections, conn)
+	return conn
+end
+function Signal:Disconnect(connToDisconnect)
+	for i, conn in ipairs(self.connections) do
+		if conn == connToDisconnect then
+			table.remove(self.connections, i)
+			break
+		end
+	end
+end
+function Signal:Fire(...)
+	for _, conn in ipairs(self.connections) do
+		task.spawn(conn.func, ...)
+	end
+end
+
 -- Common Objects
 local Common = {
 	Rooms = workspace:WaitForChild("CurrentRooms"),
 	Drops = workspace:WaitForChild("Drops"),
 	RemotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder"),
 	GameData = ReplicatedStorage:WaitForChild("GameData"),
-	CurrentRoom = 0
+	CurrentRoom = 0,
+	RoomChanged = Signal.new()
 }
--- helper function to get the current room model
-function Common.GetCurrentRoom()
-	local latestRoomName = tostring(Common.GameData.LatestRoom.Value)
-	return Common.Rooms:FindFirstChild(latestRoomName)
+function Common.GetCurrentRoomModel()
+	return Common.Rooms:FindFirstChild(tostring(Common.CurrentRoom))
 end
 
 
@@ -64,10 +90,9 @@ local function CreateBillboardGui(options: {
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Size = UDim2.new(0, 200, 0, 50)
 	billboardGui.AlwaysOnTop = true
-	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0) -- default offset is now zero
+	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0)
 	billboardGui.Adornee = options.Adornee
 	billboardGui.Parent = options.Parent
-
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Size = UDim2.new(1, 0, 1, 0)
 	textLabel.BackgroundTransparency = 1
@@ -77,7 +102,6 @@ local function CreateBillboardGui(options: {
 	textLabel.Text = options.Text
 	textLabel.TextColor3 = options.TextColor
 	textLabel.Parent = billboardGui
-
 	return billboardGui
 end
 
@@ -142,17 +166,14 @@ do
 		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then return end
 		local model = part.Parent
 		if not (model:IsA("Model") and model.Name == "Door") then return end
-
 		local highlight = Instance.new("Highlight")
 		highlight.Parent = part
 		highlight.FillColor = Color3.fromRGB(0, 255, 0)
 		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then doorText = "Door: " .. sign.Stinker.Text end
-
 		local billboardGui = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0), StudsOffset = Vector3.new(0, 2.5, 0) })
 		local connection = part:GetPropertyChangedSignal("CanCollide"):Connect(function() if not part.CanCollide then cleanupDoor(part) end end)
 		doorData[part] = { highlight = highlight, billboard = billboardGui, connection = connection }
@@ -214,43 +235,27 @@ do
 	end
 end
 
--- Generic Model ESP Factory
+-- ESP Factories
 do
-	local function CreateModelESPLogic(targetFolder: Instance, itemsToTrack: table)
+	-- for esp in a static folder (e.g. CurrentRooms, Drops)
+	local function CreateStaticESPLogic(targetFolder: Instance, itemsToTrack: table)
 		local trackedData = {}
 		local connection = nil
-
-		local function cleanup(model)
-			if trackedData[model] then
-				if trackedData[model].highlight and trackedData[model].highlight.Parent then trackedData[model].highlight:Destroy() end
-				if trackedData[model].billboard and trackedData[model].billboard.Parent then trackedData[model].billboard:Destroy() end
-				if trackedData[model].connection then trackedData[model].connection:Disconnect() end
-				trackedData[model] = nil
-			end
-		end
-
+		local function cleanup(model) if trackedData[model] then if trackedData[model].highlight and trackedData[model].highlight.Parent then trackedData[model].highlight:Destroy() end if trackedData[model].billboard and trackedData[model].billboard.Parent then trackedData[model].billboard:Destroy() end if trackedData[model].connection then trackedData[model].connection:Disconnect() end trackedData[model] = nil end end
 		local function setup(model)
-			if not model or not model:IsA("Model") or trackedData[model] then return end
-			if not model:IsDescendantOf(targetFolder) then return end
+			if not model or not model:IsA("Model") or trackedData[model] or not model:IsDescendantOf(targetFolder) then return end
 			local itemConfig = itemsToTrack[model.Name]
 			if not itemConfig then return end
-
 			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
 			if not firstPart then return end
-
 			local highlight = Instance.new("Highlight")
-			highlight.Parent = model
-			highlight.FillColor = itemConfig.Color
-			highlight.OutlineColor = itemConfig.Color
-			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-
+			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop
 			local adornee = model.PrimaryPart or firstPart
 			local espText = itemConfig.Text or model.Name
 			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
 			local conn = model.AncestryChanged:Connect(function(_, p) if p == nil or not model:IsDescendantOf(targetFolder) then cleanup(model) end end)
 			trackedData[model] = { highlight = highlight, billboard = gui, connection = conn }
 		end
-
 		return function(enable: boolean)
 			if enable then
 				for _, d in ipairs(targetFolder:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then task.spawn(setup, d) end end
@@ -264,18 +269,55 @@ do
 		end
 	end
 
-	local items = {
-		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) },
-	}
+	-- for esp that should only appear in the current room
+	local function CreateCurrentRoomESPLogic(itemsToTrack: table)
+		local masterList, visibleList = {}, {}
+		local roomConn, descConn = nil, nil
+		local function cleanup(model) if visibleList[model] then if visibleList[model].highlight and visibleList[model].highlight.Parent then visibleList[model].highlight:Destroy() end if visibleList[model].billboard and visibleList[model].billboard.Parent then visibleList[model].billboard:Destroy() end visibleList[model] = nil end end
+		local function setup(model)
+			if visibleList[model] then return end
+			local itemConfig = itemsToTrack[model.Name]
+			if not itemConfig then return end
+			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
+			if not firstPart then return end
+			local highlight = Instance.new("Highlight")
+			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop
+			local adornee = model.PrimaryPart or firstPart
+			local espText = itemConfig.Text or model.Name
+			local gui = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
+			visibleList[model] = { highlight = highlight, billboard = gui }
+		end
+		local function updateVisibility()
+			local currentRoomModel = Common.GetCurrentRoomModel()
+			for model, _ in pairs(masterList) do
+				if model and model.Parent and currentRoomModel and model:IsDescendantOf(currentRoomModel) then setup(model) else cleanup(model) end
+			end
+		end
+		return function(enable: boolean)
+			if enable then
+				for _, d in ipairs(Workspace:GetDescendants()) do if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true end end
+				descConn = Workspace.DescendantAdded:Connect(function(d) if itemsToTrack[d.Name] and d:IsA("Model") then masterList[d] = true updateVisibility() end end)
+				roomConn = Common.RoomChanged:Connect(updateVisibility)
+				updateVisibility()
+			else
+				if roomConn then Common.RoomChanged:Disconnect(roomConn) roomConn = nil end
+				if descConn then descConn:Disconnect() descConn = nil end
+				for model, _ in pairs(visibleList) do cleanup(model) end
+				masterList, visibleList = {}, {}
+			end
+		end
+	end
+
+	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local books = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" } }
 	local levers = { ["LeverForGate"] = { Color = Color3.fromRGB(128, 128, 128), Text = "Lever" } }
 
-	Logic.ItemESP = CreateModelESPLogic(Common.Rooms, items)
-	Logic.DropsESP = CreateModelESPLogic(Common.Drops, items)
-	Logic.HidingESP = CreateModelESPLogic(Workspace, hidingSpots)
-	Logic.BookESP = CreateModelESPLogic(Common.Rooms, books)
-	Logic.LeverESP = CreateModelESPLogic(Workspace, levers)
+	Logic.ItemESP = CreateStaticESPLogic(Common.Rooms, items)
+	Logic.DropsESP = CreateStaticESPLogic(Common.Drops, items)
+	Logic.BookESP = CreateStaticESPLogic(Common.Rooms, books)
+	Logic.HidingESP = CreateCurrentRoomESPLogic(hidingSpots)
+	Logic.LeverESP = CreateCurrentRoomESPLogic(levers)
 end
 
 -- Anti-Screech
@@ -289,57 +331,27 @@ end
 -- Speed
 do
 	local player = Players.LocalPlayer
-	local originalSpeed = 16
-	local speedEnabled = false
-	local currentSpeed = 16
-	local speedConnection = nil
-
-	local function updateSpeed()
-		local char = player.Character
-		if not char then return end
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		if not hum then return end
-		hum.WalkSpeed = speedEnabled and currentSpeed or originalSpeed
-	end
-
+	local originalSpeed, speedEnabled, currentSpeed, speedConnection = 16, false, 16, nil
+	local function updateSpeed() local char = player.Character if not char then return end local hum = char:FindFirstChildOfClass("Humanoid") if not hum then return end hum.WalkSpeed = speedEnabled and currentSpeed or originalSpeed end
 	local function onCharacter(char)
 		local hum = char:WaitForChild("Humanoid")
 		originalSpeed = hum.WalkSpeed
 		if speedConnection then speedConnection:Disconnect() end
-		speedConnection = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-			if speedEnabled and hum.WalkSpeed ~= currentSpeed then
-				hum.WalkSpeed = currentSpeed
-			end
-		end)
+		speedConnection = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function() if speedEnabled and hum.WalkSpeed ~= currentSpeed then hum.WalkSpeed = currentSpeed end end)
 		task.wait(0.1)
 		updateSpeed()
 	end
-
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then onCharacter(player.Character) end
-
 	Logic.SetSpeed = function(enable: boolean) speedEnabled = enable updateSpeed() end
 	Logic.SetSpeedValue = function(value: number) currentSpeed = value if speedEnabled then updateSpeed() end end
 end
 
 -- Instant Proximity Prompts
 do
-	local promptData = {}
-	local workspaceConnection = nil
-
-	local function cleanupPrompt(prompt)
-		if promptData[prompt] and prompt and prompt.Parent then
-			prompt.HoldDuration = promptData[prompt].originalDuration
-			promptData[prompt] = nil
-		end
-	end
-
-	local function setupPrompt(prompt)
-		if not prompt or not prompt:IsA("ProximityPrompt") or promptData[prompt] then return end
-		promptData[prompt] = { originalDuration = prompt.HoldDuration }
-		prompt.HoldDuration = 0
-	end
-
+	local promptData, workspaceConnection = {}, nil
+	local function cleanupPrompt(prompt) if promptData[prompt] and prompt and prompt.Parent then prompt.HoldDuration = promptData[prompt].originalDuration promptData[prompt] = nil end end
+	local function setupPrompt(prompt) if not prompt or not prompt:IsA("ProximityPrompt") or promptData[prompt] then return end promptData[prompt] = { originalDuration = prompt.HoldDuration } prompt.HoldDuration = 0 end
 	Logic.InstantPrompts = function(enable: boolean)
 		if enable then
 			for _, d in ipairs(Workspace:GetDescendants()) do if d:IsA("ProximityPrompt") then setupPrompt(d) end end
@@ -356,18 +368,9 @@ end
 -- Room Tracker
 task.spawn(function()
 	local trackedDoors = {}
-
-	local function cleanupTrackerDoor(part)
-		if trackedDoors[part] then
-			trackedDoors[part].ancestryConn:Disconnect()
-			trackedDoors[part].collideConn:Disconnect()
-			trackedDoors[part] = nil
-		end
-	end
-
+	local function cleanupTrackerDoor(part) if trackedDoors[part] then trackedDoors[part].ancestryConn:Disconnect() trackedDoors[part].collideConn:Disconnect() trackedDoors[part] = nil end end
 	local function setupTrackerDoor(part)
 		if not (part.Name == "Door" and part:IsA("BasePart")) or trackedDoors[part] then return end
-
 		local collideConn = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
 			if not part.CanCollide then
 				local sign = part.Parent and part.Parent:FindFirstChild("Sign")
@@ -377,18 +380,14 @@ task.spawn(function()
 					if roomNum and roomNum > Common.CurrentRoom then
 						Common.CurrentRoom = roomNum
 						print(SCRIPT_ID .. ": Entered room " .. roomNum)
+						Common.RoomChanged:Fire()
 					end
 				end
 			end
 		end)
-
-		local ancestryConn = part.AncestryChanged:Connect(function(_, parent)
-			if parent == nil then cleanupTrackerDoor(part) end
-		end)
-
+		local ancestryConn = part.AncestryChanged:Connect(function(_, parent) if parent == nil then cleanupTrackerDoor(part) end end)
 		trackedDoors[part] = { collideConn = collideConn, ancestryConn = ancestryConn }
 	end
-
 	for _, d in ipairs(Workspace:GetDescendants()) do setupTrackerDoor(d) end
 	Workspace.DescendantAdded:Connect(setupTrackerDoor)
 end)
@@ -422,7 +421,6 @@ debugNotify("created Tabs")
 do
 	local AntiEntityGroupbox = Tabs.Main:AddLeftGroupbox("Anti-Entity", "eye")
 	AntiEntityGroupbox:AddToggle("AntiScreech", { Text = "Anti-Screech", Default = false, Callback = function(v) Logic.AntiScreech(v) end })
-
 	local PlayerGroupbox = Tabs.Main:AddLeftGroupbox("Player", "user")
 	PlayerGroupbox:AddToggle("EnableSpeed", { Text = "Enable Speed", Default = false, Callback = function(v) Logic.SetSpeed(v) end })
 	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v) Logic.SetSpeedValue(v) end })
@@ -442,7 +440,6 @@ debugNotify("created Tabs.Floor")
 do
 	local LightingGroupbox = Tabs.Visual:AddLeftGroupbox("Lighting", "zap")
 	LightingGroupbox:AddToggle("Fullbright", { Text = "Fullbright", Default = false, Callback = function(v) Logic.Fullbright(v) end })
-
 	local ESPGroupbox = Tabs.Visual:AddLeftGroupbox("ESP", "eye")
 	ESPGroupbox:AddToggle("DoorESP", { Text = "Door ESP", Default = false, Callback = function(v) Logic.DoorESP(v) end })
 	ESPGroupbox:AddToggle("MonsterESP", { Text = "Monster ESP", Default = false, Callback = function(v) Logic.MonsterESP(v) end })
