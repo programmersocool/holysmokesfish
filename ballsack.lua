@@ -266,10 +266,8 @@ end
 
 -- Item ESP
 do
-	-- easy to add new item models here
 	local itemsToTrack = {
-		["Key"] = { Color = Color3.fromRGB(255, 255, 0) },
-		-- ["Chest"] = { Color = Color3.fromRGB(170, 85, 0) }
+		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
 	}
 
 	local itemData = {}
