@@ -5,7 +5,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.7.0" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "6.7.1" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -585,10 +585,10 @@ do
 			if char and char.PrimaryPart then
 				for _, container in ipairs({ Common.Rooms, Common.Drops }) do
 					for _, prompt in ipairs(container:GetDescendants()) do
-						if prompt.Name == "ModulePrompt" and prompt:IsA("ProximityPrompt") and prompt.Enabled and prompt.Adornee and prompt.Adornee.Parent then
-							local dist = (char.PrimaryPart.Position - prompt.Adornee.Position).Magnitude
-							if dist <= prompt.MaxActivationDistance then
-								local modelName = prompt.Parent.Name
+						if prompt:IsA("ProximityPrompt") and prompt.Enabled and prompt.Adornee and prompt.Adornee.Parent then
+							local model = prompt.Parent
+							if model:IsA("Model") then
+								local modelName = model.Name
 								local shouldTrigger = false
 								if autoInteractTarget == "All Items" then
 									if allItemNames[modelName] then shouldTrigger = true end
@@ -598,8 +598,11 @@ do
 									if modelName == "GoldPile" then shouldTrigger = true end
 								end
 								if shouldTrigger then
-									ProximityPromptService:PromptTriggered(prompt)
-									task.wait(0.1)
+									local dist = (char.PrimaryPart.Position - prompt.Adornee.Position).Magnitude
+									if dist <= prompt.MaxActivationDistance then
+										ProximityPromptService:PromptTriggered(prompt)
+										task.wait(0.1)
+									end
 								end
 							end
 						end
