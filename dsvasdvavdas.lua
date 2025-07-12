@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.8" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.7" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -57,11 +57,12 @@ end
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
-type Obsidian = typeof(require(script:FindFirstChild("Obsidian")))
-type SaveManager = typeof(require(script:FindFirstChild("SaveManager")))
-
-local Obsidian: Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-local SaveManager: SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
+local Obsidian: any
+local SaveManager: any
+pcall(function()
+	Obsidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+	SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
+end)
 
 -- check if libraries loaded correctly before proceeding
 if not Obsidian or not SaveManager then
@@ -281,7 +282,7 @@ do
 	Logic.LeverESP = CreateESPLogic(Common.Rooms, levers, true)
 end
 
--- Player Logic
+-- Player & World Logic
 do
 	local player = Players.LocalPlayer
 	Logic.AntiScreech = function(enable: boolean) local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech") if r then r.Name = enable and "notscreech" or "Screech" end end
@@ -312,20 +313,30 @@ do
 	Logic.SetFOV = function(v) workspace.CurrentCamera.FieldOfView = v end
 	Obsidian:OnUnload(function() workspace.CurrentCamera.FieldOfView = originalFOV end)
 	local hidingTransparencyEnabled, hidingTransparencyValue, trackedWardrobes = false, 0.5, {}
-	local function updateWardrobeTransparency(model, transparency) for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then part.Transparency = transparency end end end
-	local function cleanupWardrobe(model) if not trackedWardrobes[model] then return end for part, original in pairs(trackedWardrobes[model].originalTransparencies) do if part and part.Parent then part.Transparency = original end end if trackedWardrobes[model].changedConn then trackedWardrobes[model].changedConn:Disconnect() end if trackedWardrobes[model].ancestryConn then trackedWardrobes[model].ancestryConn:Disconnect() end trackedWardrobes[model] = nil end
+	local function setPartsTransparency(model, transparency) for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then part.Transparency = transparency end end end
+	local function restoreOriginalTransparency(model) if not trackedWardrobes[model] then return end for part, original in pairs(trackedWardrobes[model].originalTransparencies) do if part and part.Parent then part.Transparency = original end end end
+	local function cleanupWardrobe(model) if not trackedWardrobes[model] then return end restoreOriginalTransparency(model) if trackedWardrobes[model].changedConn then trackedWardrobes[model].changedConn:Disconnect() end if trackedWardrobes[model].ancestryConn then trackedWardrobes[model].ancestryConn:Disconnect() end trackedWardrobes[model] = nil end
 	local function setupWardrobe(model)
 		if not model:IsA("Model") or model.Name ~= "Wardrobe" or trackedWardrobes[model] then return end
-		local hiddenPlayer = model:FindFirstChild("HiddenPlayer")
-		if not hiddenPlayer then return end
-		local data = { originalTransparencies = {} }
-		for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then data.originalTransparencies[part] = part.Transparency end end
-		data.changedConn = hiddenPlayer.Changed:Connect(function(val) if hidingTransparencyEnabled then if val == player.Name then updateWardrobeTransparency(model, hidingTransparencyValue) else for part, original in pairs(data.originalTransparencies) do if part and part.Parent then part.Transparency = original end end end end end)
-		data.ancestryConn = model.AncestryChanged:Connect(function() cleanupWardrobe(model) end)
-		trackedWardrobes[model] = data
+		task.spawn(function()
+			local hiddenPlayer = model:WaitForChild("HiddenPlayer", 5)
+			if not hiddenPlayer then return end
+			local data = { originalTransparencies = {} }
+			for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then data.originalTransparencies[part] = part.Transparency end end
+			data.changedConn = hiddenPlayer.Changed:Connect(function(val) if hidingTransparencyEnabled then if val == player.Name then setPartsTransparency(model, hidingTransparencyValue) else restoreOriginalTransparency(model) end end end)
+			data.ancestryConn = model.AncestryChanged:Connect(function() cleanupWardrobe(model) end)
+			trackedWardrobes[model] = data
+			if hidingTransparencyEnabled and hiddenPlayer.Value == player.Name then setPartsTransparency(model, hidingTransparencyValue) end
+		end)
 	end
-	Logic.HidingTransparency = function(enable) hidingTransparencyEnabled = enable if not enable then for model, _ in pairs(trackedWardrobes) do cleanupWardrobe(model) setupWardrobe(model) end end end
-	Logic.SetHidingTransparencyValue = function(val) hidingTransparencyValue = val if hidingTransparencyEnabled then for model, data in pairs(trackedWardrobes) do if model:FindFirstChild("HiddenPlayer").Value == player.Name then updateWardrobeTransparency(model, val) end end end end
+	Logic.HidingTransparency = function(enable)
+		hidingTransparencyEnabled = enable
+		for model, _ in pairs(trackedWardrobes) do
+			local hiddenPlayer = model:FindFirstChild("HiddenPlayer")
+			if hiddenPlayer then if enable and hiddenPlayer.Value == player.Name then setPartsTransparency(model, hidingTransparencyValue) else restoreOriginalTransparency(model) end end
+		end
+	end
+	Logic.SetHidingTransparencyValue = function(val) hidingTransparencyValue = val if hidingTransparencyEnabled then for model, _ in pairs(trackedWardrobes) do if model:FindFirstChild("HiddenPlayer").Value == player.Name then setPartsTransparency(model, val) end end end end
 	for _, d in ipairs(Workspace:GetDescendants()) do setupWardrobe(d) end
 	Workspace.DescendantAdded:Connect(setupWardrobe)
 end
@@ -334,7 +345,6 @@ end
 task.spawn(function()
 	if _G.RoomTrackerActive then return end
 	_G.RoomTrackerActive = true
-
 	local trackedDoors = {}
 	local function cleanupTrackerDoor(part) if trackedDoors[part] then trackedDoors[part].ancestryConn:Disconnect() trackedDoors[part].collideConn:Disconnect() trackedDoors[part] = nil end end
 	local function setupTrackerDoor(part)
@@ -345,12 +355,7 @@ task.spawn(function()
 				local stinker = sign and sign:FindFirstChild("Stinker")
 				if stinker and stinker:IsA("TextLabel") then
 					local roomNum = tonumber(stinker.Text)
-					if roomNum and roomNum > Common.CurrentRoom then
-						Common.CurrentRoom = roomNum
-						print(SCRIPT_ID .. ": Entered room " .. roomNum)
-						Common.RoomChanged:Fire()
-						cleanupTrackerDoor(part) -- self-destruct listener after it's used
-					end
+					if roomNum and roomNum > Common.CurrentRoom then Common.CurrentRoom = roomNum print(SCRIPT_ID .. ": Entered room " .. roomNum) Common.RoomChanged:Fire() cleanupTrackerDoor(part) end
 				end
 			end
 		end)
@@ -429,8 +434,9 @@ do
 	ESPGroupbox:AddToggle("HidingESP", { Text = "Hiding Spot ESP", Default = false, Callback = function(v) Logic.HidingESP(v) end })
 	ESPGroupbox:AddToggle("BookESP", { Text = "Book ESP", Default = false, Callback = function(v) Logic.BookESP(v) end })
 	ESPGroupbox:AddToggle("LeverESP", { Text = "Lever ESP", Default = false, Callback = function(v) Logic.LeverESP(v) end })
-	ESPGroupbox:AddToggle("HidingTransparency", { Text = "Hiding Transparency", Default = false, Callback = function(v) Logic.HidingTransparency(v) end })
-	ESPGroupbox:AddSlider("HidingTransparencyValue", { Text = "Hiding Transparency", Default = 0.5, Min = 0.1, Max = 1, Rounding = 2, Callback = function(v) Logic.SetHidingTransparencyValue(v) end })
+	local WorldGroupbox = Tabs.Visual:AddLeftGroupbox("World", "globe")
+	WorldGroupbox:AddToggle("HidingTransparency", { Text = "Hiding Transparency", Default = false, Callback = function(v) Logic.HidingTransparency(v) end })
+	WorldGroupbox:AddSlider("HidingTransparencyValue", { Text = "Hiding Transparency", Default = 0.5, Min = 0.1, Max = 1, Rounding = 2, Callback = function(v) Logic.SetHidingTransparencyValue(v) end })
 end
 debugNotify("created Tabs.Visual")
 
