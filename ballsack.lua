@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.1.6" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.1.7" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -17,7 +17,8 @@ local Common = {
 	Rooms = workspace:WaitForChild("CurrentRooms"),
 	Drops = workspace:WaitForChild("Drops"),
 	RemotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder"),
-	GameData = ReplicatedStorage:WaitForChild("GameData")
+	GameData = ReplicatedStorage:WaitForChild("GameData"),
+	CurrentRoom = 0
 }
 -- helper function to get the current room model
 function Common.GetCurrentRoom()
@@ -264,17 +265,7 @@ do
 	end
 
 	local items = {
-		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) },
-		["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) },
-		["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) },
-		["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) },
-		["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) },
-		["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) },
-		["Candle"] = { Color = Color3.fromRGB(255, 250, 205) },
-		["Battery"] = { Color = Color3.fromRGB(50, 205, 50) },
-		["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" },
-		["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" },
-		["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) },
+		["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" },
 	}
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local books = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" } }
@@ -361,6 +352,33 @@ do
 		end
 	end
 end
+
+-- Room Tracker
+task.spawn(function()
+	while task.wait(1) do
+		local lowestDoorNumber = math.huge
+		for _, part in ipairs(Workspace:GetDescendants()) do
+			if part.Name == "Door" and part:IsA("BasePart") and part.CanCollide then
+				local sign = part.Parent and part.Parent:FindFirstChild("Sign")
+				local stinker = sign and sign:FindFirstChild("Stinker")
+				if stinker and stinker:IsA("TextLabel") then
+					local num = tonumber(stinker.Text)
+					if num and num < lowestDoorNumber then
+						lowestDoorNumber = num
+					end
+				end
+			end
+		end
+
+		if lowestDoorNumber ~= math.huge then
+			local newRoom = lowestDoorNumber - 1
+			if newRoom ~= Common.CurrentRoom then
+				Common.CurrentRoom = newRoom
+				print(SCRIPT_ID .. ": Entered room " .. newRoom)
+			end
+		end
+	end
+end)
 
 debugNotify("initialized Logic")
 
