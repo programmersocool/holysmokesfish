@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.2.4" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.2.5" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -275,10 +275,10 @@ do
 	Logic.LeverESP = CreateESPLogic(Common.Rooms, levers, true)
 end
 
--- Anti-Screech, Speed, Prompts, FOV
+-- Player Logic
 do
-	Logic.AntiScreech = function(enable: boolean) local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech") if r then r.Name = enable and "notscreech" or "Screech" end end
 	local player = Players.LocalPlayer
+	Logic.AntiScreech = function(enable: boolean) local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech") if r then r.Name = enable and "notscreech" or "Screech" end end
 	local originalSpeed, speedEnabled, currentSpeed, speedConn = 16, false, 16, nil
 	local function updateSpeed() local char = player.Character if not char then return end local hum = char:FindFirstChildOfClass("Humanoid") if not hum then return end hum.WalkSpeed = speedEnabled and currentSpeed or originalSpeed end
 	local function onCharacter(char)
@@ -305,6 +305,23 @@ do
 	local originalFOV = workspace.CurrentCamera.FieldOfView
 	Logic.SetFOV = function(v) workspace.CurrentCamera.FieldOfView = v end
 	Obsidian:OnUnload(function() workspace.CurrentCamera.FieldOfView = originalFOV end)
+	local hidingTransparencyEnabled, hidingTransparencyValue, trackedWardrobes = false, 0.5, {}
+	local function updateWardrobeTransparency(model, transparency) for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then part.Transparency = transparency end end end
+	local function cleanupWardrobe(model) if not trackedWardrobes[model] then return end for part, original in pairs(trackedWardrobes[model].originalTransparencies) do if part and part.Parent then part.Transparency = original end end if trackedWardrobes[model].changedConn then trackedWardrobes[model].changedConn:Disconnect() end if trackedWardrobes[model].ancestryConn then trackedWardrobes[model].ancestryConn:Disconnect() end trackedWardrobes[model] = nil end
+	local function setupWardrobe(model)
+		if not model:IsA("Model") or model.Name ~= "Wardrobe" or trackedWardrobes[model] then return end
+		local hiddenPlayer = model:FindFirstChild("HiddenPlayer")
+		if not hiddenPlayer then return end
+		local data = { originalTransparencies = {} }
+		for _, part in ipairs(model:GetDescendants()) do if part:IsA("BasePart") then data.originalTransparencies[part] = part.Transparency end end
+		data.changedConn = hiddenPlayer.Changed:Connect(function(val) if hidingTransparencyEnabled then if val == player.Name then updateWardrobeTransparency(model, hidingTransparencyValue) else for part, original in pairs(data.originalTransparencies) do if part and part.Parent then part.Transparency = original end end end end end)
+		data.ancestryConn = model.AncestryChanged:Connect(function() cleanupWardrobe(model) end)
+		trackedWardrobes[model] = data
+	end
+	Logic.HidingTransparency = function(enable) hidingTransparencyEnabled = enable if not enable then for model, _ in pairs(trackedWardrobes) do cleanupWardrobe(model) setupWardrobe(model) end end end
+	Logic.SetHidingTransparencyValue = function(val) hidingTransparencyValue = val if hidingTransparencyEnabled then for model, data in pairs(trackedWardrobes) do if model:FindFirstChild("HiddenPlayer").Value == player.Name then updateWardrobeTransparency(model, val) end end end end
+	for _, d in ipairs(Workspace:GetDescendants()) do setupWardrobe(d) end
+	Workspace.DescendantAdded:Connect(setupWardrobe)
 end
 
 -- Room & ESP Distance Tracker
@@ -332,8 +349,8 @@ task.spawn(function()
 		local playerChar = Players.LocalPlayer.Character
 		if not playerChar or not playerChar.PrimaryPart then return end
 		local playerPos = playerChar.PrimaryPart.Position
-		for _, esp in pairs(ActiveESPs) do
-			if esp.adornee and esp.adornee.Parent then
+		for obj, esp in pairs(ActiveESPs) do
+			if obj and obj.Parent and esp.adornee and esp.adornee.Parent then
 				local dist = math.round((playerPos - esp.adornee.Position).Magnitude)
 				esp.distanceLabel.Text = "[" .. dist .. " studs]"
 			end
@@ -375,6 +392,8 @@ do
 	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v) Logic.SetSpeedValue(v) end })
 	PlayerGroupbox:AddToggle("InstantPrompts", { Text = "Instant Prompts", Default = false, Callback = function(v) Logic.InstantPrompts(v) end })
 	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v) Logic.SetFOV(v) end })
+	PlayerGroupbox:AddToggle("HidingTransparency", { Text = "Hiding Transparency", Default = false, Callback = function(v) Logic.HidingTransparency(v) end })
+	PlayerGroupbox:AddSlider("HidingTransparencyValue", { Text = "Hiding Transparency", Default = 0.5, Min = 0.1, Max = 1, Callback = function(v) Logic.SetHidingTransparencyValue(v) end })
 end
 debugNotify("created Tabs.Main")
 
