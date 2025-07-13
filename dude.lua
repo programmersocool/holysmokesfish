@@ -992,6 +992,26 @@ do
 	end
 end
 
+RunService.RenderStepped:Connect(function()
+	local playerChar = Players.LocalPlayer.Character
+	if not playerChar or not playerChar.PrimaryPart then return end
+	local playerPos = playerChar.PrimaryPart.Position
+	for _, esp in pairs(ActiveESPs) do
+		if esp.adornee and esp.adornee.Parent then
+			local adorneePos
+			if esp.adornee:IsA("BasePart") then
+				adorneePos = esp.adornee.Position
+			elseif esp.adornee:IsA("Model") then
+				adorneePos = esp.adornee:GetPivot().Position
+			end
+			if adorneePos then
+				local dist = math.round((playerPos - adorneePos).Magnitude)
+				esp.distanceLabel.Text = "[" .. dist .. " studs]"
+			end
+		end
+	end
+end)
+					
 debugNotify("initialized Logic")
 
 
