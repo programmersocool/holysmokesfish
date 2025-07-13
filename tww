@@ -1,3 +1,26 @@
+warn("check your pants")
+print([[
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣤⣤⣤⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠋⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣸⣿⡏⠀⠀⠀⣠⣶⣾⣿⣿⣿⠿⠿⠿⢿⣿⣿⣿⣄⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠁⠀⠀⢰⣿⣿⣯⠁⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣷⡄⠀ 
+⠀⠀⣀⣤⣴⣶⣶⣿⡟⠀⠀⠀⢸⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣷⠀ 
+⠀⢰⣿⡟⠋⠉⣹⣿⡇⠀⠀⠀⠘⣿⣿⣿⣿⣷⣦⣤⣤⣤⣶⣶⣶⣶⣿⣿⣿⠀ 
+⠀⢸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀ 
+⠀⣸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠉⠻⠿⣿⣿⣿⣿⡿⠿⠿⠛⢻⣿⡇⠀⠀ 
+⠀⣿⣿⠁⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣧⠀⠀ 
+⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀ 
+⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀ 
+⠀⢿⣿⡆⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡇⠀⠀ 
+⠀⠸⣿⣧⡀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠃⠀⠀ 
+⠀⠀⠛⢿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⣰⣿⣿⣷⣶⣶⣶⣶⠶⠀⢠⣿⣿⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⣽⣿⡏⠁⠀⠀⢸⣿⡇⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⢹⣿⡆⠀⠀⠀⣸⣿⠇⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿⠁⠀⠈⠻⣿⣿⣿⣿⡿⠏⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+]])
+
 if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
@@ -5,7 +28,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "6.7.6" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.9" -- please use semver (https://semver.org/)
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -16,12 +39,8 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
-local PathfindingService = game:GetService("PathfindingService")
-local UserInputService = game:GetService("UserInputService")
-local ContextActionService = game:GetService("ContextActionService")
-local Debris = game:GetService("Debris") -- needed for cleaning up path visuals
 
--- thingyyyy
+-- Signal
 local Signal = {}
 Signal.__index = Signal
 function Signal.new()
@@ -48,19 +67,6 @@ function Signal:Fire(...)
 	end
 end
 
--- Common Objects
-local Common = {
-	Rooms = workspace:WaitForChild("CurrentRooms"),
-	Drops = workspace:WaitForChild("Drops"),
-	RemotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder"),
-	GameData = ReplicatedStorage:WaitForChild("GameData"),
-	CurrentRoom = 0,
-	RoomChanged = Signal.new(),
-}
-function Common.GetCurrentRoomModel()
-	return Common.Rooms:FindFirstChild(tostring(Common.CurrentRoom))
-end
-
 
 -- https://github.com/deividcomsono/Obsidian/blob/main/README.md
 
@@ -81,6 +87,137 @@ end
 
 debugNotify("loaded libraries")
 
+------------------------------------
+-------------- COMMON --------------
+------------------------------------
+
+local Common = {
+	Rooms = workspace:WaitForChild("CurrentRooms") :: Folder,
+	Drops = workspace:WaitForChild("Drops"),
+	RemotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder") :: Folder,
+	GameData = ReplicatedStorage:WaitForChild("GameData"),
+	CurrentRoom = 0,
+	RoomChanged = Signal.new(),
+	TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+}
+function Common.GetCurrentRoomModel()
+	return Common.Rooms:FindFirstChild(tostring(Common.CurrentRoom))
+end
+
+-- TweenInstance
+-- fade-in/out effects for esp elements
+-- TODO: optimize this
+do
+	-- TODO: change "out" to a better name. wtf does it do???
+	-- TODO: ur mom !!!! ahhahahhah 😂
+	function Common.TweenInstance(instance: Instance, fadeout: boolean): ()
+		local function destroyInstance(): ()
+			instance:Destroy()
+		end
+
+		if instance:IsA("Highlight") then
+			local goal = {
+				FillTransparency = if fadeout then 1 else 0.5,
+				OutlineTransparency = if fadeout then 1 else 0,
+			}
+			if not fadeout then
+				instance.FillTransparency = 1
+				instance.OutlineTransparency = 1
+			end
+
+			local tween = TweenService:Create(instance, Common.TWEEN_INFO, goal)
+			if fadeout then
+				tween.Completed:Connect(destroyInstance)
+			end
+			tween:Play()
+		elseif instance:IsA("BillboardGui") then
+			local labels = {}
+			local strokes = {}
+			
+			for _, child in instance:GetChildren() do
+				if child:IsA("TextLabel") then
+					table.insert(labels, child)
+					local stroking_it = child:FindFirstChildOfClass("UIStroke")
+					if stroking_it then
+						table.insert(strokes, stroking_it)
+					end
+				end
+			end
+			for i, label in labels do
+				local textGoal = { TextTransparency = if fadeout then 1 else 0 }
+				if not fadeout then
+					label.TextTransparency = 1
+				end
+				
+				local textTween = TweenService:Create(label, Common.TWEEN_INFO, textGoal)
+				if fadeout and i == #labels then
+					textTween.Completed:Connect(destroyInstance)
+				end
+				textTween:Play()
+			end
+			for _, stroke in strokes do
+				local strokeGoal = { Transparency = if fadeout then 1 else 0 }
+				if not fadeout then
+					stroke.Transparency = 1
+				end
+				TweenService:Create(stroke, Common.TWEEN_INFO, strokeGoal):Play()
+			end
+		end
+	end
+end
+
+-- reusable function to create billboard guis for esp
+function Common.CreateBillboardGui(options: { Parent: Instance, Adornee: BasePart, Text: string, TextColor: Color3, StudsOffset: Vector3? })
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.Size = UDim2.new(0, 200, 0, 70)
+	billboardGui.AlwaysOnTop = true
+	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0)
+	billboardGui.Adornee = options.Adornee
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Parent = billboardGui
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 0, 30)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextScaled = true
+	nameLabel.Font = Enum.Font.SourceSansBold
+	nameLabel.Text = options.Text
+	nameLabel.TextColor3 = options.TextColor
+	nameLabel.Parent = billboardGui
+
+	local nameStroke = Instance.new("UIStroke")
+	nameStroke.Color = Color3.new(0, 0, 0)
+	nameStroke.Thickness = 1
+	nameStroke.Parent = nameLabel
+
+	local distanceLabel = Instance.new("TextLabel")
+	distanceLabel.Size = UDim2.new(1, 0, 0, 20)
+	distanceLabel.BackgroundTransparency = 1
+	distanceLabel.TextScaled = true
+	distanceLabel.Font = Enum.Font.SourceSans
+	distanceLabel.Text = "[...]"
+	distanceLabel.TextColor3 = options.TextColor
+	distanceLabel.Parent = billboardGui
+
+	local distStroke = Instance.new("UIStroke")
+	distStroke.Color = Color3.new(0, 0, 0)
+	distStroke.Thickness = 1
+	distStroke.Parent = distanceLabel
+
+	billboardGui.Parent = options.Parent
+
+	return {
+		gui = billboardGui,
+		nameLabel = nameLabel,
+		distanceLabel = distanceLabel,
+	}
+end
+
+debugNotify("created Common table")
+
 
 -----------------------------------
 -------------- LOGIC --------------
@@ -88,245 +225,6 @@ debugNotify("loaded libraries")
 
 local Logic = {}
 local ActiveESPs = {}
-local TWEEN_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-
--- This code goes inside the large "do...end" block that starts with Logic.AntiScreech
--- REPLACE the previous AutoHiding code with this entire block.
-
-local autoHidingActive = false
-local hideConnection = nil
-local AUTO_HIDE_ACTION_NAME = "AutoHidingControlLock"
-
--- Disables player movement input
-local function disablePlayerControls()
-	ContextActionService:BindAction(AUTO_HIDE_ACTION_NAME, function() return Enum.ContextActionResult.Sink end, false, Enum.PlayerActions.CharacterForward, Enum.PlayerActions.CharacterBackward, Enum.PlayerActions.CharacterLeft, Enum.PlayerActions.CharacterRight, Enum.PlayerActions.CharacterJump)
-end
-
--- Re-enables player movement input
-local function enablePlayerControls()
-	ContextActionService:UnbindAction(AUTO_HIDE_ACTION_NAME)
-end
-
-local function findAndEnterHidingSpot()
-	if autoHidingActive then return end -- Don't run if already running
-
-	local player = Players.LocalPlayer
-	local char = player.Character
-	if not (char and char.PrimaryPart) then return end
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-
-	autoHidingActive = true
-	disablePlayerControls()
-	debugNotify("Auto-hiding! Pathfinding... Press SPACE to cancel.")
-
-	local spacebarConnection
-	local visiblePathParts = {}
-
-	-- Centralized cleanup function
-	local function endAutoHideSequence()
-		if spacebarConnection then spacebarConnection:Disconnect(); spacebarConnection = nil end
-		enablePlayerControls()
-		autoHidingActive = false
-		-- Stop any current movement
-		if humanoid and humanoid.Parent then
-			humanoid:MoveTo(humanoid.Parent.PrimaryPart.Position)
-		end
-		-- Destroy visible path
-		for _, part in ipairs(visiblePathParts) do if part and part.Parent then part:Destroy() end end
-		table.clear(visiblePathParts)
-	end
-
-	-- Connect spacebar to cancel
-	spacebarConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if not gameProcessed and input.KeyCode == Enum.KeyCode.Space then
-			debugNotify("Auto-hide cancelled by player!")
-			endAutoHideSequence()
-		end
-	end)
-
-	-- Find the closest hiding spot
-	local playerPos = char.PrimaryPart.Position
-	local closestSpot, closestDist, closestPrompt = nil, math.huge, nil
-
-	for i = Common.CurrentRoom, Common.CurrentRoom + 1 do
-		local room = Common.Rooms:FindFirstChild(tostring(i))
-		if room then
-			for _, descendant in ipairs(room:GetDescendants()) do
-				if (descendant.Name == "Wardrobe" or descendant.Name == "Locker") and descendant:IsA("Model") then
-					local prompt = descendant:FindFirstChildWhichIsA("ProximityPrompt")
-					local pivot = descendant:GetPivot()
-					if prompt and pivot then
-						local dist = (playerPos - pivot.Position).Magnitude
-						if dist < closestDist then
-							closestDist, closestSpot, closestPrompt = dist, descendant, prompt
-						end
-					end
-				end
-			end
-		end
-	end
-
-	if closestSpot and closestPrompt then
-		local path = PathfindingService:CreatePath({ AgentRadius = 3, AgentHeight = 6, AgentCanJump = true })
-		path:ComputeAsync(playerPos, closestSpot:GetPivot().Position)
-
-		if path.Status == Enum.PathStatus.Success then
-			local waypoints = path:GetWaypoints()
-
-			-- Visualize the path
-			for _, waypoint in ipairs(waypoints) do
-				local marker = Instance.new("Part")
-				marker.Shape = Enum.PartType.Ball
-				marker.Size = Vector3.new(1, 1, 1)
-				marker.Position = waypoint.Position
-				marker.Anchored = true
-				marker.CanCollide = false
-				marker.Transparency = 0.5
-				marker.Color = Color3.fromRGB(0, 255, 255)
-				marker.Material = Enum.Material.Neon
-				marker.Parent = Workspace
-				table.insert(visiblePathParts, marker)
-			end
-
-			-- Walk the path using the standard MoveToFinished:Wait() pattern
-			for index, waypoint in ipairs(waypoints) do
-				if not autoHidingActive then break end -- Check for cancellation
-				
-				-- If the waypoint is a jump, just ignore it for now to keep movement smooth
-				if waypoint.Action == Enum.PathWaypointAction.Jump then
-					continue
-				end
-				
-				humanoid:MoveTo(waypoint.Position)
-				
-				-- Wait for the movement to finish, with a timeout
-				local success = humanoid.MoveToFinished:Wait(8)
-				
-				if not autoHidingActive then break end -- Check again in case of cancellation during wait
-
-				-- If we timed out, it means we got stuck.
-				if not success then
-					debugNotify("MoveTo timed out (stuck?). Stopping.")
-					endAutoHideSequence()
-					return -- Stop the entire function
-				end
-			end
-
-			if autoHidingActive then
-				-- Final check and interaction
-				if (char.PrimaryPart.Position - closestSpot:GetPivot().Position).Magnitude < 12 then
-					closestPrompt:InputHoldBegin()
-					task.wait(0.1)
-					closestPrompt:InputHoldEnd()
-					debugNotify("Safely hidden!")
-				else
-					debugNotify("Failed to get close enough to hide.")
-				end
-			end
-		else
-			debugNotify("Pathfinding failed: " .. path.Status.Name)
-		end
-	else
-		debugNotify("Could not find a hiding spot.")
-	end
-
-	-- Always run cleanup at the very end
-	endAutoHideSequence()
-end
-
--- This part remains the same
-local function onMonsterAdded(entity)
-	if autoHidingActive then return end
-	if entity.Name == "RushMoving" or entity.Name == "AmbushMoving" then
-		task.spawn(findAndEnterHidingSpot)
-	end
-end
-
--- This part remains the same
-Logic.SetAutoHiding = function(enable)
-	if enable then
-		if not hideConnection then
-			hideConnection = Workspace.ChildAdded:Connect(onMonsterAdded)
-		end
-	else
-		if hideConnection then
-			hideConnection:Disconnect()
-			hideConnection = nil
-		end
-		if autoHidingActive then
-			endAutoHideSequence() -- Ensure cleanup if disabled mid-run
-		end
-	end
-end
-
--- fade-in/out effects for esp elements
-local function tweenInstance(instance, out)
-	local onComplete = out and function()
-		instance:Destroy()
-	end or nil
-	if instance:IsA("Highlight") then
-		local goal = { FillTransparency = out and 1 or 0.5, OutlineTransparency = out and 1 or 0 }
-		if not out then
-			instance.FillTransparency, instance.OutlineTransparency = 1, 1
-		end
-		local tween = TweenService:Create(instance, TWEEN_INFO, goal)
-		if onComplete then
-			tween.Completed:Connect(onComplete)
-		end
-		tween:Play()
-	elseif instance:IsA("BillboardGui") then
-		local labels, strokes = {}, {}
-		for _, child in ipairs(instance:GetChildren()) do
-			if child:IsA("TextLabel") then
-				table.insert(labels, child)
-				local stroke = child:FindFirstChildOfClass("UIStroke")
-				if stroke then
-					table.insert(strokes, stroke)
-				end
-			end
-		end
-		for i, label in ipairs(labels) do
-			local textGoal = { TextTransparency = out and 1 or 0 }
-			if not out then
-				label.TextTransparency = 1
-			end
-			local textTween = TweenService:Create(label, TWEEN_INFO, textGoal)
-			if out and i == #labels and onComplete then
-				textTween.Completed:Connect(onComplete)
-			end
-			textTween:Play()
-		end
-		for _, stroke in ipairs(strokes) do
-			local strokeGoal = { Transparency = out and 1 or 0 }
-			if not out then
-				stroke.Transparency = 1
-			end
-			TweenService:Create(stroke, TWEEN_INFO, strokeGoal):Play()
-		end
-	end
-end
-
--- a reusable function to create billboard guis for esp
-local function CreateBillboardGui(options: { Parent: Instance, Adornee: BasePart, Text: string, TextColor: Color3, StudsOffset: Vector3? })
-	local billboardGui = Instance.new("BillboardGui")
-	billboardGui.Size = UDim2.new(0, 200, 0, 70)
-	billboardGui.AlwaysOnTop = true
-	billboardGui.StudsOffset = options.StudsOffset or Vector3.new(0, 0, 0)
-	billboardGui.Adornee = options.Adornee
-	billboardGui.Parent = options.Parent
-	local listLayout = Instance.new("UIListLayout")
-	listLayout.Parent, listLayout.SortOrder, listLayout.HorizontalAlignment = billboardGui, Enum.SortOrder.LayoutOrder, Enum.HorizontalAlignment.Center
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size, nameLabel.BackgroundTransparency, nameLabel.TextScaled, nameLabel.Font, nameLabel.Text, nameLabel.TextColor3, nameLabel.Parent = UDim2.new(1, 0, 0, 30), 1, true, Enum.Font.SourceSansBold, options.Text, options.TextColor, billboardGui
-	local nameStroke = Instance.new("UIStroke")
-	nameStroke.Color, nameStroke.Thickness, nameStroke.Parent = Color3.new(0, 0, 0), 1, nameLabel
-	local distanceLabel = Instance.new("TextLabel")
-	distanceLabel.Size, distanceLabel.BackgroundTransparency, distanceLabel.TextScaled, distanceLabel.Font, distanceLabel.Text, distanceLabel.TextColor3, distanceLabel.Parent = UDim2.new(1, 0, 0, 20), 1, true, Enum.Font.SourceSans, "[...]", options.TextColor, billboardGui
-	local distStroke = Instance.new("UIStroke")
-	distStroke.Color, distStroke.Thickness, distStroke.Parent = Color3.new(0, 0, 0), 1, distanceLabel
-	return { gui = billboardGui, nameLabel = nameLabel, distanceLabel = distanceLabel }
-end
 
 
 -- Fullbright
@@ -375,8 +273,8 @@ do
 	local doorData, roomConn = {}, nil
 	local function cleanupDoor(part)
 		if doorData[part] then
-			tweenInstance(doorData[part].highlight, true)
-			tweenInstance(doorData[part].billboard, true)
+			Common.TweenInstance(doorData[part].highlight, true)
+			Common.TweenInstance(doorData[part].billboard, true)
 			ActiveESPs[part] = nil
 			doorData[part] = nil
 		end
@@ -396,11 +294,11 @@ do
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
 			doorText = "Door: " .. sign.Stinker.Text
 		end
-		local guiElements = CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
+		local guiElements = Common.CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
 		doorData[part] = { highlight = highlight, billboard = guiElements.gui }
 		ActiveESPs[part] = { adornee = part, distanceLabel = guiElements.distanceLabel }
-		tweenInstance(highlight, false)
-		tweenInstance(guiElements.gui, false)
+		Common.TweenInstance(highlight, false)
+		Common.TweenInstance(guiElements.gui, false)
 	end
 	local function updateDoors()
 		for part, _ in pairs(doorData) do
@@ -436,26 +334,61 @@ end
 
 -- Monster ESP & Alerts
 do
-	local monsterData, workspaceConnection = {}, nil
-	local alertEnabled = false
-	local selectedEntities = { Rush = true, Ambush = true, Eyes = true }
+	local monsterData = {}
+	local espConnection = nil
+	local alertConnection = nil
 
-	Logic.SetMonsterAlert = function(enable)
-		alertEnabled = enable
-	end
-	Logic.SetAlertEntities = function(entities)
-		selectedEntities = {}
-		for _, entity in ipairs(entities) do
-			selectedEntities[entity] = true
+	--[[
+		ALERT LOGIC
+		- This is controlled by the "Monster Alert" toggle.
+		- It listens for specific monster models being added to the Workspace.
+	]]
+	local function onAlertEntityAdded(entity)
+		local name = entity.Name
+		if name == "RushMoving" or name == "AmbushMoving" or name == "Eyes" then
+			local prettyName = string.gsub(name, "Moving", "")
+			debugNotify("ALERT: " .. prettyName .. " has appeared!")
 		end
 	end
 
+	Logic.SetMonsterAlert = function(enable)
+		if enable then
+			if not alertConnection then
+				-- Check for existing entities in case the script is run mid-game
+				for _, child in ipairs(Workspace:GetChildren()) do
+					onAlertEntityAdded(child)
+				end
+				alertConnection = Workspace.ChildAdded:Connect(onAlertEntityAdded)
+			end
+		else
+			if alertConnection then
+				alertConnection:Disconnect()
+				alertConnection = nil
+			end
+		end
+	end
+
+	--[[
+		ESP LOGIC
+		- This is controlled by the "Monster ESP" toggle.
+		- It creates highlights and billboards for monsters.
+	]]
 	local function cleanupMonster(entity)
 		if monsterData[entity] then
-			if entity:IsA("BasePart") then entity.Transparency = 1 end
-			tweenInstance(monsterData[entity].highlight, true)
-			tweenInstance(monsterData[entity].billboard, true)
-			if monsterData[entity].connection then monsterData[entity].connection:Disconnect() end
+			if monsterData[entity].highlight then
+				Common.TweenInstance(monsterData[entity].highlight, true)
+			end
+			if monsterData[entity].billboard then
+				Common.TweenInstance(monsterData[entity].billboard, true)
+			end
+			if monsterData[entity].connection then
+				monsterData[entity].connection:Disconnect()
+			end
+			-- Revert transparency if it was changed
+			if monsterData[entity].partToMakeVisible and monsterData[entity].originalTransparency then
+				monsterData[entity].partToMakeVisible.Transparency = monsterData[entity].originalTransparency
+			end
+
 			ActiveESPs[entity] = nil
 			monsterData[entity] = nil
 		end
@@ -464,8 +397,11 @@ do
 	local function setupMonster(entity)
 		if not entity or not entity.Parent or monsterData[entity] then return end
 
-		local monsterText, highlightPart, adorneePart
+		local monsterText, highlightPart, adorneePart, fillTransparency, partToMakeVisible, originalTransparency
+		fillTransparency = 0.5 -- Default value
+
 		if entity:IsA("BasePart") and entity.Name == "RushNew" then
+			partToMakeVisible = entity
 			highlightPart = entity
 			adorneePart = entity
 			if entity.Parent.Name == "AmbushMoving" then
@@ -473,50 +409,73 @@ do
 			elseif entity.Parent.Name == "RushMoving" then
 				monsterText = "Rush"
 			end
-			highlightPart.Transparency = 0
 		elseif entity:IsA("Model") and entity.Name == "Eyes" then
-			highlightPart = entity.Core
-			adorneePart = entity.Core
+			local core = entity:FindFirstChild("Core")
+			if not core then return end -- Don't run if Core doesn't exist
+			partToMakeVisible = core
+			highlightPart = core
+			adorneePart = core
 			monsterText = "Eyes"
+			fillTransparency = 0 -- Custom transparency for Eyes ESP
 		end
 
 		if not (monsterText and highlightPart and adorneePart) then return end
 
-		if alertEnabled and selectedEntities[monsterText] then
-			debugNotify("ALERT: " .. monsterText .. " is active!")
-		end
+		-- Make the part visible
+		originalTransparency = partToMakeVisible.Transparency
+		partToMakeVisible.Transparency = 0
 
+		-- Create ESP elements
 		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = highlightPart, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
-		local guiElements = CreateBillboardGui({ Parent = adorneePart, Adornee = adorneePart, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode = highlightPart, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0), Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.FillTransparency = fillTransparency
+		highlight.OutlineTransparency = 0
+
+		local guiElements = Common.CreateBillboardGui({ Parent = adorneePart, Adornee = adorneePart, Text = monsterText, TextColor = Color3.fromRGB(255, 0, 0) })
+
 		local connection = entity.AncestryChanged:Connect(function(_, parent)
 			if parent == nil then cleanupMonster(entity) end
 		end)
-		monsterData[entity] = { highlight = highlight, billboard = guiElements.gui, connection = connection }
+
+		monsterData[entity] = {
+			highlight = highlight,
+			billboard = guiElements.gui,
+			connection = connection,
+			partToMakeVisible = partToMakeVisible,
+			originalTransparency = originalTransparency
+		}
 		ActiveESPs[entity] = { adornee = highlightPart, distanceLabel = guiElements.distanceLabel }
-		tweenInstance(highlight, false)
-		tweenInstance(guiElements.gui, false)
+
+		-- Manually tween in to respect custom transparency
+		highlight.FillTransparency, highlight.OutlineTransparency = 1, 1 -- Start transparent
+		local highlightGoal = { FillTransparency = fillTransparency, OutlineTransparency = 0 }
+		TweenService:Create(highlight, Common.TWEEN_INFO, highlightGoal):Play()
+		Common.TweenInstance(guiElements.gui, false) -- Use helper for GUI
 	end
 
 	Logic.MonsterESP = function(enable: boolean)
 		if enable then
-			for _, d in ipairs(Workspace:GetDescendants()) do
-				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Eyes") then
-					setupMonster(d)
+			if not espConnection then
+				for _, d in Workspace:GetDescendants() do
+					if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Eyes") then
+						setupMonster(d)
+					end
 				end
+				espConnection = Workspace.DescendantAdded:Connect(function(d)
+					if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Eyes") then
+						task.wait()
+						setupMonster(d)
+					end
+				end)
 			end
-			workspaceConnection = Workspace.DescendantAdded:Connect(function(d)
-				if (d:IsA("BasePart") and d.Name == "RushNew") or (d:IsA("Model") and d.Name == "Eyes") then
-					task.wait()
-					setupMonster(d)
-				end
-			end)
 		else
-			if workspaceConnection then
-				workspaceConnection:Disconnect()
-				workspaceConnection = nil
+			if espConnection then
+				espConnection:Disconnect()
+				espConnection = nil
 			end
-			for p, _ in pairs(monsterData) do cleanupMonster(p) end
+			local cleanupQueue = {}
+			for p, _ in pairs(monsterData) do table.insert(cleanupQueue, p) end
+			for _, p in ipairs(cleanupQueue) do cleanupMonster(p) end
 		end
 	end
 end
@@ -527,8 +486,8 @@ do
 		local masterList, visibleList, roomConn, descConn = {}, {}, nil, nil
 		local function cleanup(model)
 			if visibleList[model] then
-				tweenInstance(visibleList[model].highlight, true)
-				tweenInstance(visibleList[model].billboard, true)
+				Common.TweenInstance(visibleList[model].highlight, true)
+				Common.TweenInstance(visibleList[model].billboard, true)
 				ActiveESPs[model] = nil
 				visibleList[model] = nil
 			end
@@ -554,11 +513,11 @@ do
 			else
 				espText = itemConfig.Text or model.Name
 			end
-			local guiElements = CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
+			local guiElements = Common.CreateBillboardGui({ Parent = adornee, Adornee = adornee, Text = espText, TextColor = itemConfig.Color })
 			visibleList[model] = { highlight = highlight, billboard = guiElements.gui }
 			ActiveESPs[model] = { adornee = adornee, distanceLabel = guiElements.distanceLabel }
-			tweenInstance(highlight, false)
-			tweenInstance(guiElements.gui, false)
+			Common.TweenInstance(highlight, false)
+			Common.TweenInstance(guiElements.gui, false)
 		end
 		local function updateVisibility()
 			local currentRoomModel = Common.GetCurrentRoomModel()
@@ -816,43 +775,11 @@ end
 
 -- room and ESP distance tracker
 task.spawn(function()
-	local trackedDoors = {}
-	local function cleanupTrackerDoor(part)
-		if trackedDoors[part] then
-			trackedDoors[part].ancestryConn:Disconnect()
-			trackedDoors[part].collideConn:Disconnect()
-			trackedDoors[part] = nil
-		end
+	local function getCurrentRoom(player)
+		Common.CurrentRoom = game.Players.LocalPlayer:GetAttribute("CurrentRoom")
 	end
-	local function setupTrackerDoor(part)
-		if not (part.Name == "Door" and part:IsA("BasePart")) or trackedDoors[part] then
-			return
-		end
-		local collideConn = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
-			if not part.CanCollide then
-				local sign = part.Parent and part.Parent:FindFirstChild("Sign")
-				local stinker = sign and sign:FindFirstChild("Stinker")
-				if stinker and stinker:IsA("TextLabel") then
-					local roomNum = tonumber(stinker.Text)
-					if roomNum and roomNum > Common.CurrentRoom then
-						Common.CurrentRoom = roomNum
-						print(SCRIPT_ID .. ": freaking entered room " .. roomNum)
-						Common.RoomChanged:Fire()
-					end
-				end
-			end
-		end)
-		local ancestryConn = part.AncestryChanged:Connect(function(_, parent)
-			if parent == nil then
-				cleanupTrackerDoor(part)
-			end
-		end)
-		trackedDoors[part] = { collideConn = collideConn, ancestryConn = ancestryConn }
-	end
-	for _, d in ipairs(Workspace:GetDescendants()) do
-		setupTrackerDoor(d)
-	end
-	Workspace.DescendantAdded:Connect(setupTrackerDoor)
+	
+
 	RunService.RenderStepped:Connect(function()
 		local playerChar = Players.LocalPlayer.Character
 		if not playerChar or not playerChar.PrimaryPart then return end
@@ -911,15 +838,6 @@ do
 	AntiEntityGroupbox:AddToggle("MonsterAlert", { Text = "Monster Alert", Default = false, Callback = function(v)
 		Logic.SetMonsterAlert(v)
 	end })
-	AntiEntityGroupbox:AddDropdown("AlertEntities", {
-		Text = "Alert Entities",
-		Values = { "Rush", "Ambush", "Eyes" },
-		Default = { "Rush", "Ambush", "Eyes" },
-		Multi = true,
-		Callback = function(v)
-			Logic.SetAlertEntities(v)
-		end,
-	})
 
 	local PlayerGroupbox = Tabs.Main:AddLeftGroupbox("Player", "user")
 	PlayerGroupbox:AddToggle("EnableSpeed", { Text = "Enable Speed", Default = false, Callback = function(v)
@@ -937,12 +855,6 @@ do
 	PlayerGroupbox:AddToggle("Twerk", { Text = "Twerk", Default = false, Callback = function(v)
 		Logic.Twerk(v)
 	end })
-	PlayerGroupbox:AddToggle("AutoHiding", {
- 		Text = "Auto-Hiding",
-    		Default = false,
-    		Callback = function(v)
-        	Logic.SetAutoHiding(v)
-    	end})
 	PlayerGroupbox:AddToggle("AutoInteract", { Text = "Auto Interact", Default = false, Callback = function(v)
 		Logic.SetAutoInteract(v)
 	end })
