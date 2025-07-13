@@ -419,11 +419,6 @@ do
 	local espConnection = nil
 	local alertConnection = nil
 
-	--[[
-		ALERT LOGIC
-		- This is controlled by the "Monster Alert" toggle.
-		- It listens for specific monster models being added to the Workspace.
-	]]
 	local function onAlertEntityAdded(entity)
 		local name = entity.Name
 		if name == "RushMoving" or name == "AmbushMoving" or name == "Eyes" then
@@ -435,7 +430,6 @@ do
 	Logic.SetMonsterAlert = function(enable)
 		if enable then
 			if not alertConnection then
-				-- Check for existing entities in case the script is run mid-game
 				for _, child in ipairs(Workspace:GetChildren()) do
 					onAlertEntityAdded(child)
 				end
@@ -449,11 +443,6 @@ do
 		end
 	end
 
-	--[[
-		ESP LOGIC
-		- This is controlled by the "Monster ESP" toggle.
-		- It creates highlights and billboards for monsters.
-	]]
 	local function cleanupMonster(entity)
 		if monsterData[entity] then
 			if monsterData[entity].highlight then
@@ -650,6 +639,63 @@ do
 			end
 		end
 	end
+	Logic.DynamicItemESP = function(enable: boolean)
+		local visibleItems, itemConns = {}, {}
+		local function isItemModel(model)
+			return model:IsA("Model") and
+				model:FindFirstChild("ModulePrompt", true) and model.ModulePrompt:IsA("ProximityPrompt") and
+				model:FindFirstChild("Handle") and
+				model:FindFirstChild("Main")
+		end
+		local function cleanup(model)
+			if visibleItems[model] then
+				Common.TweenInstance(visibleItems[model].highlight, true)
+				Common.TweenInstance(visibleItems[model].billboard, true)
+				ActiveESPs[model] = nil
+				visibleItems[model] = nil
+			end
+		end
+		local function setup(model)
+			if visibleItems[model] then return end
+			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
+			if not firstPart then return end
+			-- Assign random color (not one color; varies per item)
+			local randomColor = Color3.fromHSV(math.random(), 1, 1)  -- Random hue, full saturation/brightness
+			local highlight = Instance.new("Highlight")
+			highlight.Parent = model
+			highlight.FillColor = randomColor
+			highlight.OutlineColor = randomColor
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.FillTransparency = 0.75
+			local adornee = model.PrimaryPart or firstPart
+			local guiElements = Common.CreateBillboardGui({
+				Parent = adornee,
+				Adornee = adornee,
+				Text = "Item",  -- Generic text; can customize based on model if needed
+				TextColor = randomColor
+			})
+			visibleItems[model] = { highlight = highlight, billboard = guiElements.gui }
+			ActiveESPs[model] = { adornee = adornee, distanceLabel = guiElements.distanceLabel }
+			Common.TweenInstance(highlight, false)
+			Common.TweenInstance(guiElements.gui, false)
+		end
+		if enable then
+			local containers = {Common.Rooms, Common.Drops}
+			for _, container in ipairs(containers) do
+				for _, d in ipairs(container:GetDescendants()) do
+					if isItemModel(d) then setup(d) end
+				end
+				local conn = container.DescendantAdded:Connect(function(d)
+					if isItemModel(d) then task.wait() setup(d) end
+				end)
+				table.insert(itemConns, conn)
+			end
+		else
+			for _, conn in ipairs(itemConns) do conn:Disconnect() end
+			itemConns = {}
+			for model in pairs(visibleItems) do cleanup(model) end
+		end
+	end
 	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local objectives = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" }, ["LiveBreakerPolePickup"] = { Color = Color3.fromRGB(150, 150, 150), Text = "Breaker" } }
@@ -755,6 +801,44 @@ do
 		end
 	end
 end
+
+local rainbowEnabled = false
+local rainbowConnection
+Logic.RainbowESP = function(enable: boolean)
+	rainbowEnabled = enable
+	if enable then
+		if not rainbowConnection then
+			rainbowConnection = RunService.Heartbeat:Connect(function()
+				local hue = (tick() % 5) / 5  -- Cycle every 5 seconds
+				local rainbowColor = Color3.fromHSV(hue, 1, 1)
+				for _, esp in pairs(ActiveESPs) do
+					if esp.adornee and esp.adornee.Parent then
+						local highlight = esp.adornee:FindFirstChildOfClass("Highlight")
+						if highlight then
+							highlight.FillColor = rainbowColor
+							highlight.OutlineColor = rainbowColor
+						end
+						local billboard = esp.adornee:FindFirstChildOfClass("BillboardGui")
+						if billboard then
+							for _, child in billboard:GetChildren() do
+								if child:IsA("TextLabel") then
+									child.TextColor3 = rainbowColor
+								end
+							end
+						end
+					end
+				end
+			end)
+		end
+	else
+		if rainbowConnection then
+			rainbowConnection:Disconnect()
+			rainbowConnection = nil
+		end
+		-- Reset to original colors if needed (optional; add logic here if you track originals)
+	end
+end
+
 -- Anti-Screech, Speed, Prompts, FOV, Animation
 do
 	Logic.AntiScreech = function(enable: boolean)
@@ -1145,6 +1229,12 @@ do
 	end })
 	ESPGroupbox:AddToggle("ItemESP", { Text = "Item ESP", Default = false, Callback = function(v)
 		Logic.ItemESP(v)
+	end })
+	ESPGroupbox:AddToggle("DynamicItemESP", { Text = "Item ESP (Dynamic)", Default = false, Callback = function(v)
+		Logic.DynamicItemESP(v)
+	end })
+	ESPGroupbox:AddToggle("RainbowESP", { Text = "Rainbow ESP (All)", Default = false, Callback = function(v)
+		Logic.RainbowESP(v)
 	end })
 	ESPGroupbox:AddToggle("PlayerESP", { Text = "Player ESP", Default = false, Callback = function(v)
 		Logic.PlayerESP(v)
