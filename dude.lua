@@ -164,8 +164,6 @@ end
 -- fade-in/out effects for esp elements
 -- TODO: optimize this
 do
-	-- TODO: change "out" to a better name. wtf does it do???
-	-- TODO: ur mom !!!! ahhahahhah 😂
 	function Common.TweenInstance(instance: Instance, fadeout: boolean): ()
 		local function destroyInstance(): ()
 			instance:Destroy()
@@ -640,7 +638,97 @@ do
 	Logic.LeverESP = CreateESPLogic(Common.Rooms, levers, true)
 	Logic.GoldESP = CreateESPLogic(Common.Rooms, goldItems, false)
 end
+-- player esp
+do
+	local playerespdata = {}
+	local playerespconnection = nil
+	
+	local function fart(player)
+		if playerespdata[player] then
+			if playerespdata[player].highlight then
+				Common.TweenInstance(playerespdata[player].highlight, true)
+			end
+			if playerespdata[player].billboard then
+				Common.TweenInstance(playerespdata[player].billboard, true)
+			end
+			if playerespdata[player].connection then
+				playerespdata[player].connection:Disconnect()
+			end
+			ActiveESPs[player] = nil
+			playerespdata[player] = nil
+		end
+	end
+	
+	local function shit(player)
+		if player == Players.LocalPlayer or playerespdata[player] or not player.Character then return end
 
+		local char = player.Character
+		local head = char:FindFirstChild("Head")
+		if not head then return end
+
+		local highlight = Instance.new("Highlight")
+		highlight.Parent = char
+		highlight.FillColor = Color3.fromRGB(0, 255, 255)  -- cyan
+		highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.FillTransparency = 0.5
+		highlight.OutlineTransparency = 0
+
+		local guiElements = Common.CreateBillboardGui({
+			Parent = head,
+			Adornee = head,
+			Text = player.Name,
+			TextColor = Color3.fromRGB(0, 255, 255),
+			StudsOffset = Vector3.new(0, 2, 0) --make it above their cranium
+		})
+
+		local connection = char.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then fart(player) end
+		end)
+
+		playerespdata[player] = {
+			highlight = highlight,
+			billboard = guiElements.gui,
+			connection = connection
+		}
+		ActiveESPs[player] = { adornee = head, distanceLabel = guiElements.distanceLabel }
+		highlight.FillTransparency, highlight.OutlineTransparency = 1, 1
+		local highlightGoal = { FillTransparency = 0.5, OutlineTransparency = 0 }
+		TweenService:Create(highlight, Common.TWEEN_INFO, highlightGoal):Play()
+		Common.TweenInstance(guiElements.gui, false)
+	end
+	
+	local function when(player) --joins            also this is here cause if someone revives and things this should work
+		if player ~= Players.LocalPlayer then
+			player.CharacterAdded:Connect(function()
+				task.wait(0.1)
+				shit(player)
+			end)
+			if player.Character then
+				shit(player)
+			end
+		end
+	end
+	
+	Logic.PlayerESP = function(enable: boolean)
+		if enable then
+			if not playerespconnection then
+				for _, p in ipairs(Players:GetPlayers()) do
+					when(p)
+				end
+				playerespconnection = Players.PlayerAdded:Connect(when)
+			end
+		else
+			if playerespconnection then
+				playerespconnection:Disconnect()
+				playerespconnection = nil
+			end
+			local cleanupthing = {}
+			for p, _ in pairs(playerespdata) do table.insert(cleanupthing, p) end
+			for _, p in ipairs(cleanupthing) do fart(p) end
+		end
+	end
+end
 -- Anti-Screech, Speed, Prompts, FOV, Animation
 do
 	Logic.AntiScreech = function(enable: boolean)
@@ -999,6 +1087,9 @@ do
 	end })
 	ESPGroupbox:AddToggle("ItemESP", { Text = "Item ESP", Default = false, Callback = function(v)
 		Logic.ItemESP(v)
+	end })
+	ESPGroupbox:AddToggle("PlayerESP", { Text = "Player ESP", Default = false, Callback = function(v)
+		Logic.PlayerESP(v)
 	end })
 	ESPGroupbox:AddToggle("DropsESP", { Text = "Drops ESP", Default = false, Callback = function(v)
 		Logic.DropsESP(v)
