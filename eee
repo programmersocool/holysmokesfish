@@ -361,7 +361,7 @@ do
 		end
 	end
 	local function setupDoor(part)
-		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then
+		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide or part.Name ~= "Door" then
 			return
 		end
 		local model = part.Parent
@@ -369,7 +369,7 @@ do
 			return
 		end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent = model  -- Parent to the door model
+		highlight.Parent = part  -- Parent to the specific "Door" BasePart only
 		highlight.FillColor = Color3.fromRGB(0, 255, 0)
 		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -650,11 +650,18 @@ do
 	Logic.DynamicItemESP = function(enable: boolean)
 		local visibleItems, itemConns = {}, {}
 		local function isItemModel(model)
-			if not model:IsA("Model") then return false end  -- Early exit for non-models
-			local prompt = model:FindFirstChild("ModulePrompt", true)  -- Recursive search
-			local handle = model:FindFirstChild("Handle", true)  -- Recursive
-			local main = model:FindFirstChild("Main", true)  -- Recursive
-			return prompt and prompt:IsA("ProximityPrompt") and handle and main
+			if not model:IsA("Model") then return false end
+			if model.Parent == Common.Rooms or tonumber(model.Name) ~= nil then return false end
+			local prompt = model:FindFirstChild("ModulePrompt", true)
+			local handle = model:FindFirstChild("Handle", true)
+			local main = model:FindFirstChild("Main", true)
+			if not (prompt and prompt:IsA("ProximityPrompt") and handle and handle:IsA("BasePart") and main and main:IsA("BasePart")) then
+				return false
+			end
+			-- not large models (e.g furniture/rooms; items are small)
+			local size = model:GetExtentsSize()
+			if size.X > 10 or size.Y > 10 or size.Z > 10 then return false end
+			return true
 		end
 		local function cleanup(model)
 			if visibleItems[model] then
@@ -666,10 +673,9 @@ do
 		end
 		local function setup(model)
 			if visibleItems[model] then return end
-			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)  -- Recursive for safety
+			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
 			if not firstPart then return end
-			-- Assign random color (not one color; varies per item)
-			local randomColor = Color3.fromHSV(math.random(), 1, 1)  -- Random hue, full saturation/brightness
+			local randomColor = Color3.fromHSV(math.random(), 1, 1)
 			local highlight = Instance.new("Highlight")
 			highlight.Parent = model
 			highlight.FillColor = randomColor
@@ -680,7 +686,7 @@ do
 			local guiElements = Common.CreateBillboardGui({
 				Parent = adornee,
 				Adornee = adornee,
-				Text = model.Name,  -- Use the model's name as the text
+				Text = model.Name,
 				TextColor = randomColor
 			})
 			visibleItems[model] = { highlight = highlight, billboard = guiElements.gui }
