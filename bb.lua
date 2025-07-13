@@ -1,3 +1,4 @@
+--TODO: i need to redo the code that detects room player is in
 warn("check your closet")
 print(if math.random(1, 100) == 1 then [[
 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣛⣛⣛⠋⠭⠭⢤⣭⣭⣉⣉⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
@@ -368,7 +369,7 @@ do
 			return
 		end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = part, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
+		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = 0.75, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
@@ -478,7 +479,7 @@ do
 		if not entity or not entity.Parent or monsterData[entity] then return end
 
 		local monsterText, highlightPart, adorneePart, fillTransparency, partToMakeVisible, originalTransparency
-		fillTransparency = 0.5 -- Default value
+		fillTransparency = 0.75 -- balls
 
 		if entity:IsA("BasePart") and entity.Name == "RushNew" then
 			partToMakeVisible = entity
@@ -491,12 +492,11 @@ do
 			end
 		elseif entity:IsA("Model") and entity.Name == "Eyes" then
 			local core = entity:FindFirstChild("Core")
-			if not core then return end -- Don't run if Core doesn't exist
+			if not core then warn("eyes core not found for some reaowsn") return end
 			partToMakeVisible = core
 			highlightPart = core
 			adorneePart = core
 			monsterText = "Eyes"
-			fillTransparency = 0 -- Custom transparency for Eyes ESP
 		end
 
 		if not (monsterText and highlightPart and adorneePart) then return end
@@ -697,7 +697,7 @@ do
 		highlight.FillColor = Color3.fromRGB(0, 255, 255)  -- cyan
 		highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		highlight.FillTransparency = 0.5
+		highlight.FillTransparency = 0.75
 		highlight.OutlineTransparency = 0
 
 		local guiElements = Common.CreateBillboardGui({
@@ -719,7 +719,7 @@ do
 		}
 		ActiveESPs[player] = { adornee = head, distanceLabel = guiElements.distanceLabel }
 		highlight.FillTransparency, highlight.OutlineTransparency = 1, 1
-		local highlightGoal = { FillTransparency = 0.5, OutlineTransparency = 0 }
+		local highlightGoal = { FillTransparency = 0.75, OutlineTransparency = 0 }
 		TweenService:Create(highlight, Common.TWEEN_INFO, highlightGoal):Play()
 		Common.TweenInstance(guiElements.gui, false)
 	end
@@ -755,7 +755,7 @@ do
 		end
 	end
 end
--- Anti-Screech, Speed, Prompts, FOV, twerk
+-- Anti-Screech, Speed, Prompts, FOV, Animation
 do
 	Logic.AntiScreech = function(enable: boolean)
 		local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech")
@@ -990,26 +990,69 @@ do
 	Logic.SetAutoInteractTarget = function(target)
 		autoInteractTarget = target
 	end
+
+
 end
 
-RunService.RenderStepped:Connect(function()
-	local playerChar = Players.LocalPlayer.Character
-	if not playerChar or not playerChar.PrimaryPart then return end
-	local playerPos = playerChar.PrimaryPart.Position
-	for _, esp in pairs(ActiveESPs) do
-		if esp.adornee and esp.adornee.Parent then
-			local adorneePos
-			if esp.adornee:IsA("BasePart") then
-				adorneePos = esp.adornee.Position
-			elseif esp.adornee:IsA("Model") then
-				adorneePos = esp.adornee:GetPivot().Position
-			end
-			if adorneePos then
-				local dist = math.round((playerPos - adorneePos).Magnitude)
-				esp.distanceLabel.Text = "[" .. dist .. " studs]"
-			end
+-- room and ESP distance tracker
+task.spawn(function()
+	local trackedDoors = {}
+	local function cleanupTrackerDoor(part)
+		if trackedDoors[part] then
+			trackedDoors[part].ancestryConn:Disconnect()
+			trackedDoors[part].collideConn:Disconnect()
+			trackedDoors[part] = nil
 		end
 	end
+	local function setupTrackerDoor(part)
+		if not (part.Name == "Door" and part:IsA("BasePart")) or trackedDoors[part] then
+			return
+		end
+		local collideConn = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
+			if not part.CanCollide then
+				local sign = part.Parent and part.Parent:FindFirstChild("Sign")
+				local stinker = sign and sign:FindFirstChild("Stinker")
+				if stinker and stinker:IsA("TextLabel") then
+					local roomNum = tonumber(stinker.Text)
+					if roomNum and roomNum > Common.CurrentRoom then
+						Common.CurrentRoom = roomNum
+						print(SCRIPT_ID .. ": freaking entered room " .. roomNum)
+						Common.RoomChanged:Fire()
+					end
+				end
+			end
+		end)
+		local ancestryConn = part.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then
+				cleanupTrackerDoor(part)
+			end
+		end)
+		trackedDoors[part] = { collideConn = collideConn, ancestryConn = ancestryConn }
+	end
+	for _, d in ipairs(Workspace:GetDescendants()) do
+		setupTrackerDoor(d)
+	end
+	Workspace.DescendantAdded:Connect(setupTrackerDoor)
+	RunService.RenderStepped:Connect(function()
+		local playerChar = Players.LocalPlayer.Character
+		if not playerChar or not playerChar.PrimaryPart then return end
+		local playerPos = playerChar.PrimaryPart.Position
+		for espKey, esp in pairs(ActiveESPs) do
+			if esp.adornee and esp.adornee.Parent then
+				local adorneePos
+				if esp.adornee:IsA("BasePart") then
+					adorneePos = esp.adornee.Position
+				elseif esp.adornee:IsA("Model") then
+					adorneePos = esp.adornee:GetPivot().Position
+				end
+
+				if adorneePos then
+					local dist = math.round((playerPos - adorneePos).Magnitude)
+					esp.distanceLabel.Text = "[" .. dist .. " studs]"
+				end
+			end
+		end
+	end)
 end)
 
 debugNotify("initialized Logic")
