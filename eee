@@ -369,11 +369,17 @@ do
 			return
 		end
 		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = 0.75, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
+		highlight.Parent = model  -- Parent to the door model
+		highlight.FillColor = Color3.fromRGB(0, 255, 0)
+		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.FillTransparency = 0.5
+		highlight.OutlineTransparency = 0
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
-		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
-			doorText = "Door: " .. sign.Stinker.Text
+		local stinker = sign and sign:FindFirstChild("Stinker")
+		if stinker and stinker:IsA("TextLabel") then
+			doorText = "Door: " .. stinker.Text
 		end
 		local guiElements = Common.CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
 		doorData[part] = { highlight = highlight, billboard = guiElements.gui }
@@ -387,9 +393,11 @@ do
 		end
 		for _, d in ipairs(Common.Rooms:GetDescendants()) do -- more performant search
 			if d.Name == "Door" and d:IsA("BasePart") then
-				local sign = d.Parent and d.Parent:FindFirstChild("Sign")
-				if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
-					local num = tonumber(sign.Stinker.Text)
+				local model = d.Parent
+				local sign = model and model:FindFirstChild("Sign")
+				local stinker = sign and sign:FindFirstChild("Stinker")
+				if stinker and stinker:IsA("TextLabel") then
+					local num = tonumber(stinker.Text)
 					if num and (num == Common.CurrentRoom or num == Common.CurrentRoom + 1) then
 						setupDoor(d)
 					end
@@ -672,7 +680,7 @@ do
 			local guiElements = Common.CreateBillboardGui({
 				Parent = adornee,
 				Adornee = adornee,
-				Text = "Item",  -- Generic text; can customize based on model if needed
+				Text = model.Name,  -- Use the model's name as the text
 				TextColor = randomColor
 			})
 			visibleItems[model] = { highlight = highlight, billboard = guiElements.gui }
