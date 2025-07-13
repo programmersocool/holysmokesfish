@@ -1,24 +1,80 @@
-warn("check your pants")
-print([[
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣤⣤⣤⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠋⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⣸⣿⡏⠀⠀⠀⣠⣶⣾⣿⣿⣿⠿⠿⠿⢿⣿⣿⣿⣄⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⠁⠀⠀⢰⣿⣿⣯⠁⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣷⡄⠀ 
-⠀⠀⣀⣤⣴⣶⣶⣿⡟⠀⠀⠀⢸⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣷⠀ 
-⠀⢰⣿⡟⠋⠉⣹⣿⡇⠀⠀⠀⠘⣿⣿⣿⣿⣷⣦⣤⣤⣤⣶⣶⣶⣶⣿⣿⣿⠀ 
-⠀⢸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀ 
-⠀⣸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠉⠻⠿⣿⣿⣿⣿⡿⠿⠿⠛⢻⣿⡇⠀⠀ 
-⠀⣿⣿⠁⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣧⠀⠀ 
-⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀ 
-⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀ 
-⠀⢿⣿⡆⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡇⠀⠀ 
-⠀⠸⣿⣧⡀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠃⠀⠀ 
-⠀⠀⠛⢿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⣰⣿⣿⣷⣶⣶⣶⣶⠶⠀⢠⣿⣿⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⣽⣿⡏⠁⠀⠀⢸⣿⡇⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⢹⣿⡆⠀⠀⠀⣸⣿⠇⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿⠁⠀⠈⠻⣿⣿⣿⣿⡿⠏⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+warn("check your closet")
+print(if math.random(1, 100) == 1 then [[
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣛⣛⣛⠋⠭⠭⢤⣭⣭⣉⣉⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⢋⢼⣿⣿⣿⣿⣿⣖⠦⠌⠙⠛⠿⣿⣷⠂⠉⠙⠻⢿⣿⠋⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠥⣶⣤⢃⢆⠌⠙⢿⣿⣿⣿⣿⣿⣭⣛⠷⣶⣮⣤⣀⣀⣀⡀⠁⠀⠀⠀⠀⠀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⠟⣭⣴⠶⠾⠿⠿⣃⣠⣴⣾⣿⣶⣌⠻⢿⣿⣿⣿⣻⣿⣦⣝⠿⣿⣿⣿⣿⣷⣍⠉⠁⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⡏⣼⣿⢃⠈⣉⣴⣦⣹⣿⣿⣿⣿⣿⣿⣿⣦⡙⢿⣿⣿⣿⣿⣿⣿⣦⣝⠻⣿⣿⣿⣷⣄⠀⣀⠀⠀⠀⠈⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⡟⢰⣿⡟⢠⣾⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣝⣿⣿⣿⣿⣿⣿⣿⣿⣮⡙⢿⣷⡙⣆⠙⢿⣶⣦⣐⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⢁⣿⣿⣧⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠟⣛⣻⡙⢿⣿⢿⣿⣿⣿⢿⣿⣿⣿⣦⡙⢷⠈⣠⣤⡿⣿⣿⣷⣦⣄⣉⠛⠿⢿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⡇⣼⣿⣿⢫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⢨⡻⣿⣧⢠⡙⢷⡙⢿⣿⣧⢻⣿⣿⣿⣿⣦⡀⠙⢿⡿⣬⠻⣿⣭⡉⢫⣽⣥⣦⣤⣾⣿⣿⣿
+⠿⠿⠿⠿⢰⣿⣻⣿⢸⣿⣿⣿⢟⣿⣿⣿⣿⣿⣿⣿⠹⣿⡌⣷⣌⠻⣇⢻⣦⡹⠠⡙⣿⡆⢿⣿⣿⣿⣿⣿⣾⣦⠻⣶⣅⡹⢿⣿⣦⣌⠻⣿⣿⣿⣿⣿⣿
+⠀⠀⠀⠀⣿⣷⣿⣿⠱⣿⣿⣧⡆⢘⢿⣿⣿⣿⣿⣿⡄⡹⣧⠸⣿⣷⣬⡀⢿⣿⣇⢳⣌⠿⢸⡸⣿⣿⣿⣯⡙⡻⠷⣌⠻⣿⣿⣿⣿⣿⣷⡌⢿⣿⣿⣿⣿
+⣧⠀⠀⢸⣿⣿⣿⣿⡁⣿⡿⣿⣿⢸⣦⣉⠻⣿⣿⣿⣇⢱⣌⡂⠛⠉⠁⠁⠀⠀⢴⡌⣿⣧⣸⣧⢹⣿⢹⣿⡇⢿⣷⣦⣥⣀⢲⣶⣶⣤⣭⣭⣄⣹⣿⣿⣿
+⣿⡧⢀⣿⣿⣿⢿⣿⡄⣿⡇⠙⣿⡸⡿⢿⣷⣄⡙⢿⣿⡈⣿⣿⣖⠀⢠⠠⣐⠀⣼⣧⢹⣿⣿⣿⡆⠿⢸⣿⣧⢸⣿⣟⠻⣿⣦⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⢃⡾⠋⣿⣿⣇⢻⡇⣿⣧⢸⣜⠃⠿⠋⠁⢿⣿⣶⣬⣃⢸⣿⣿⣷⣤⣤⣴⣾⣿⣿⡘⣿⣿⣿⣷⢀⣿⢻⣿⠀⣿⣿⡆⢀⠙⢧⢻⣿⣿⣿⣿⣿⣿⣿⣿
+⠃⠊⠀⠀⢹⣿⣿⡌⡇⢿⣿⡈⠟⠁⠀⢀⡀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⠃⢹⣿⣼⡿⠈⣿⠀⣿⣿⣿⢸⣷⣄⠀⣿⣿⣿⣿⣿⣿⣿⣿
+⡴⠂⠀⠀⠘⣿⣿⣧⠑⣌⢿⣇⢠⡀⠠⠌⠁⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⡟⢠⡸⣿⣿⡇⣶⢹⢀⡿⢛⡍⠸⣿⠿⠖⠛⣿⣿⣿⣿⣿⣿⣿
+⣿⣾⣶⣿⠀⢻⣿⣿⣦⢸⣦⠉⠘⣿⣶⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢻⣿⣿⣿⣿⣿⢠⣿⡅⣿⣿⢡⣮⡌⣠⣶⣿⣤⣶⣶⣷⡟⠸⢟⡛⢛⣿⣿⣿⣿
+⣿⣿⣿⡏⣼⠘⣿⡿⣿⡿⣿⣷⡌⢿⡟⠙⠻⠟⠻⣿⣿⣿⣿⡟⡻⠟⣫⣾⣿⣿⣿⣿⣿⢿⣿⡇⢸⠇⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡣⠿⡿⣿⣿⣿
+⣿⣿⣿⢃⣿⠇⢹⡇⣿⣿⣜⢿⣿⠘⠤⠄⣀⡀⠀⣿⣷⣭⣽⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⡧⢶⣦⠘⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡒⢠⣾⣿
+⣿⣿⡏⠞⣡⣾⠘⡇⡘⠋⠉⡠⢤⡔⣦⣤⣾⡟⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⢻⣾⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⣠⣴
+⣿⣿⣤⣾⣿⡿⠀⠄⠁⠀⢀⡀⣣⣾⣿⠿⢋⣼⡿⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠡⠀⠀⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡜⢿⣿
+⣿⣿⣿⡿⠋⠀⠀⠀⠀⠀⢀⠉⢿⣿⠥⣡⡏⡟⠀⠐⢰⣶⢶⣶⣄⠀⠖⠂⠁⠀⠀⠀⠈⠛⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⣯⣁⢒⣶⣿⣿
+⣿⣿⣿⡇⠀⠀⠀⠀⠉⠲⣄⠁⠀⢡⣼⣿⡇⢀⠈⠀⠒⢤⡘⢿⣿⡷⠀⠀⠀⢀⣠⣤⠂⠼⠛⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⣸⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⠇⠀⡌⠀⠀⠀⠀⠸⡄⠃⢼⡇⠛⣁⠏⠀⠀⠀⠀⡹⢶⡙⠁⣠⢴⣾⣹⣿⡿⠟⠋⠀⢹⣿⣿⣿⣿⣿⡻⣿⣿⠋⢻⢏⣭⣝⡃⣼⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⡆⡀⠐⢄⠀⠀⠀⡘⠀⠁⠸⡷⠀⠁⠀⠀⠀⠀⢰⣼⣿⣿⣿⠋⣾⡟⠿⠋⠀⠀⠀⠀⠀⠈⠈⢛⢿⣿⠀⣌⠛⢸⣧⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣂⡡⢀⢀⡀⢁⠀⡈⢀⡾⢡⣶⠶⣄⠀⠀⠀⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⢀⠥⠈⠀⠀⣠⣿⣦⡝⠃⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⡔⠁⠀⠈⠄⣂⢹⠟⢠⣼⢱⣿⣷⡅⠀⢰⡟⣭⣝⢃⠀⠀⠀⠢⠄⠒⠉⠀⠀⣀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⡏⠀⠇⠀⠀⠸⠀⡌⠀⠀⢈⡠⠙⠛⣈⣄⡘⣯⡻⡟⢻⣧⡀⡀⠀⣀⣀⣤⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⡄⠑⢄⡰⠂⣁⠔⠀⠀⢡⣾⣿⣿⣿⣿⣾⣷⢀⡛⢴⣦⡿⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣷⠀⠀⠈⠉⠀⠀⠠⣾⢿⡿⣿⣿⣿⣿⣿⢧⡎⣿⣶⣶⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⣀⣉⣘⣑⣛⣿⣯⣿⣿⢱⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+]] else [[
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣈⣿⣿⣿⣿⣿⣇⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣤⣤⡀⠀⣠⣼⣿⣿⣿⠿⠿⢯⡿⠿⢤⡀⠀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣾⣿⣿⣿⣿⡝⠀⠀⠀⠈⠸⠗⠽⣼⣿⣿⣿⣿⢆⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣴⣷⣧⣤⡀⢰⣷⣻⣿⣿⣿⣿⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⢹⣿⣿⣿⣿⣿⡝⣴⣿⣿⣿⣯⣍⠀⠈⡌⡟⠛⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣽⣿⣿⣿⣿⣿⣿⣿⠣⣺⣗⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣟⣝⢻⡿⠟⣻⡟⠋⠉⢋⡟⣷⠎⣄⢁⠊⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⡇⠀⡀⣿⡧⠀⡴⡾⠰⠁⢙⣦⣭⣼⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣾⣄⣿⣿⣾⣆⣤⣖⣠⣾⡗⣾⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢰⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⡠⠤⣠⣶⣝⣿⣿⣿⣿⡛⠑⢩⣿⡿⠓⠛⠉⣁⢎⣮⣰⣿⣏⢶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣠⣾⣷⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⡓⣿⣿⣿⠀⠀⣀⣷⢿⣿⣿⣿⠩⢙⣯⣗⣎⣭⣲⣄⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣠⣾⣿⣿⣿⣯⣽⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡷⡶⢻⢿⣿⣿⣿⣿⣩⠀⠄⠰⠍⢢⠀⠀⠀⠀
+⠀⠀⢀⣼⣿⣿⣿⣿⣿⣿⣇⣠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣭⠁⠈⠙⢻⣋⣹⠐⠀⣿⣿⣿⣿⣷⣖⠁⡀⠀⠓⢣⠀⠀⠀
+⠀⣠⠾⠙⠻⣿⣿⣿⣿⣿⣿⣿⡿⢻⣿⣿⣿⣿⣿⣿⡿⠿⠁⠀⠀⠀⠹⢁⠑⠀⡘⡿⣿⣿⣿⣯⢂⣄⡀⠘⣳⡆⠀⠀
+⣼⣷⣏⣠⣌⣨⣿⣿⣿⣿⡟⠋⢠⣿⣿⣿⣿⣿⣿⣿⣷⣮⠁⠀⠀⠀⠀⢣⣈⠁⢃⡹⣿⣿⣿⣿⣖⠎⠁⠀⠁⡸⡀⠀
+⣿⣿⡿⣿⣯⡿⢵⣿⣿⣿⡶⢆⣾⣿⣿⣿⣿⣿⣿⠛⠛⠋⠀⠀⠀⠀⠀⠀⣗⠑⠈⠁⡹⣿⠻⣿⣿⣷⣵⣦⣤⠊⠁⠀
+⠹⣿⣯⣽⣿⣾⣷⡟⠙⠻⢯⠋⣿⣿⣿⣿⣿⣿⣾⣤⡀⠀⠀⠀⠀⠀⠀⠀⢸⠙⠨⢔⠅⣿⡀⠈⣻⣿⣿⡇⠑⠫⠑⡄
+⠀⠈⠻⢿⣿⣿⡟⠻⢦⣤⠃⢸⣿⣿⣿⣿⣿⣿⣿⡋⠊⠀⠀⠀⠀⠀⠀⠀⠈⣞⣣⢴⢺⣿⡇⢠⣿⣿⣿⠂⠂⠀⠃⢡
+⠀⠀⠀⢸⣿⡿⢿⣤⣤⡜⠀⠘⣿⣿⣿⣿⣿⣿⡿⡋⡷⡂⢀⠀⠀⠀⡀⠀⠀⣗⣿⣓⣾⣿⠇⢸⣿⣿⣿⣧⠠⠀⢲⣸
+⠀⠀⠀⠈⠻⢿⣦⣖⡺⠁⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣵⠐⡈⠀⠀⠀⠀⠀⠀⣷⣝⣄⣿⣿⠀⢸⣿⣿⣷⠊⠀⠀⣢⡇
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀⠀⠀⠀⠀⠀⡟⡻⢹⣿⠇⠀⠘⣿⣿⣷⣷⣥⣄⡿⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣽⣿⣿⣿⣿⣫⡟⠊⠁⠀⠀⠀⠀⠀⠀⢀⢗⣽⣾⣯⡄⠀⢀⣾⠿⡟⢿⢟⣋⠁⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣷⣧⣤⣤⣄⣠⡤⣴⣿⣿⣿⣿⣿⣷⣿⣟⢁⢸⠁⠤⣣⡟⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣤⢦⠜⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡅⠈⠀⠨⢪⢁⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣵⣿⣿⣿⣿⣿⣿⣿⣿⠿⢿⣷⡟⡠⡷⠁⢂⠧⢹⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⡻⢿⣿⣿⣿⣿⠿⠿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣿⣿⣇⣽⡇⣠⣾⢹⡎⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⠥⠓⠊⠝⣻⣿⠀⠀⣿⣿⣿⣿⡿⡿⡿⠟⢑⣾⠀⠈⠛⠓⠚⠛⠚⠁⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⡊⢀⠀⠀⠐⣿⠀⠀⣿⣿⣿⡿⠉⢠⢁⡀⠼⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⡿⢒⡐⣄⣴⡿⠀⠀⢹⣿⣿⣿⢀⠀⠀⢀⣭⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⡿⢾⠿⢿⡾⠁⠀⠀⠈⢿⣿⣿⣿⠷⠿⡾⣾⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣽⣿⣿⣿⣇⣠⣴⡎⠀⠀⠀⠀⢸⣿⣿⣿⣾⡅⣌⣿⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⢏⠉⠉⢹⢷⠀⠀⠀⠀⢸⣿⣿⣿⡏⠁⠀⠪⣱⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⡿⠿⠧⠀⠀⣺⠀⠀⠀⠀⢸⣿⣿⣿⢄⠀⠄⠌⡉⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⡃⠀⡀⠀⢠⣿⠀⠀⠀⠀⢸⣿⣿⣿⡄⠗⠀⢀⣸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣷⢞⡔⠀⠺⡇⠀⠀⠀⠀⢸⣿⣿⣿⣧⡂⢀⠴⣶⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⠇⠀⢠⣃⠇⠀⠀⠀⠀⠀⣿⣿⣿⡟⣏⢀⣹⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠤⣶⣿⣿⣿⣿⣗⠒⢿⣷⡄⠀⠀⠀⣠⣾⣿⣿⣷⠚⢳⣾⣦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣠⣤⣶⣾⣥⡾⣿⠟⣫⣾⣿⣿⣄⣤⣿⣿⠀⠀⡼⣾⣿⣩⣿⣿⣷⣹⣿⡿⢮⣇⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣷⣾⣯⣸⣿⣿⡿⢉⣀⢹⣿⣿⣧⣾⣿⣯⣽⣿⣿⣿⠇⠉⣿⣧⣦⣱⡵⣆⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠸⢿⣿⣿⣿⣿⣿⣿⡺⢼⣿⣿⣗⡊⣘⣹⡛⢋⣿⣿⣟⠪⢻⣿⣿⣿⠂⠧⣽⣿⣧⠁⠀⣟⡄⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠀⠉⠉⠛⠓⠒⠒⠚⠁⠈⠛⠻⠧⠤⠛⠛⠿⠯⠿⠬⠞⠛⠻⠭⠝⠓⠂⠀⠀⠀⠀⠀
 ]])
 
 if not game:IsLoaded() then
@@ -731,6 +787,59 @@ do
 			for _, p in ipairs(toClean) do cleanupClip(p) end
 		end
 	end
+	
+	local promptReachData, promptReachConns = {}, {}
+	local promptReachMultiplier = 1
+	local promptReachEnabled = false
+	
+	local function cleanupReach(p)
+		if promptReachData[p] and p then
+			p.MaxActivationDistance = promptReachData[p].originalDistance
+			promptReachData[p] = nil
+		end
+	end
+	
+	local function setupReach(p)
+		if not p or not p:IsA("ProximityPrompt") or promptReachData[p] then return end
+		promptReachData[p] = { originalDistance = p.MaxActivationDistance }
+		if promptReachEnabled then
+			p.MaxActivationDistance = p.MaxActivationDistance * promptReachMultiplier
+		end
+	end
+	
+	Logic.PromptReach = function(enable: boolean)
+		promptReachEnabled = enable
+		if enable then
+			for _, container in ipairs({ Common.Rooms, Common.Drops }) do
+				for _, d in ipairs(container:GetDescendants()) do
+					if d:IsA("ProximityPrompt") then setupReach(d) end
+				end
+				local conn = container.DescendantAdded:Connect(function(d)
+					if d:IsA("ProximityPrompt") then setupReach(d) end
+				end)
+				table.insert(promptReachConns, conn)
+			end
+		else
+			for _, conn in ipairs(promptReachConns) do conn:Disconnect() end
+			promptReachConns = {}
+			local toClean = {}
+			for p in pairs(promptReachData) do
+				table.insert(toClean, p)
+			end
+			for _, p in ipairs(toClean) do cleanupReach(p) end
+		end
+	end
+	
+	Logic.SetPromptReachValue = function(value: number)
+		promptReachMultiplier = value
+		if promptReachEnabled then
+			for p, data in pairs(promptReachData) do
+				if p and p.Parent then
+					p.MaxActivationDistance = data.originalDistance * value
+				end
+			end
+		end
+	end
 
 	local allItemNames = { ["KeyObtain"] = true, ["Lighter"] = true, ["Flashlight"] = true, ["Vitamins"] = true, ["Bandage"] = true, ["Lockpicks"] = true, ["Candle"] = true, ["Battery"] = true, ["SkeletonKey"] = true, ["Crucifix"] = true, ["Smoothie"] = true, ["GoldPile"] = true }
 	local function onPromptShown(prompt)
@@ -768,9 +877,7 @@ do
 		autoInteractTarget = target
 	end
 
-	local originalFOV = workspace.CurrentCamera.FieldOfView
-	Logic.SetFOV = function(v) workspace.CurrentCamera.FieldOfView = v end
-	Obsidian:OnUnload(function() workspace.CurrentCamera.FieldOfView = originalFOV end)
+
 end
 
 -- room and ESP distance tracker
@@ -838,13 +945,18 @@ do
 	AntiEntityGroupbox:AddToggle("MonsterAlert", { Text = "Monster Alert", Default = false, Callback = function(v)
 		Logic.SetMonsterAlert(v)
 	end })
-
 	local PlayerGroupbox = Tabs.Main:AddLeftGroupbox("Player", "user")
 	PlayerGroupbox:AddToggle("EnableSpeed", { Text = "Enable Speed", Default = false, Callback = function(v)
 		Logic.SetSpeed(v)
 	end })
 	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v)
 		Logic.SetSpeedValue(v)
+	end })
+	PlayerGroupbox:AddSlider("PromptReachValue", { Text = "Reach Multiplier (markiplier)", Default = 1, Min = 0.5, Max = 2, Rounding = 1, Callback = function(v)
+		Logic.SetPromptReachValue(v)
+	end })
+	PlayerGroupbox:AddToggle("PromptReach", { Text = "Prompt Reach", Default = false, Callback = function(v)
+		Logic.PromptReach(v)
 	end })
 	PlayerGroupbox:AddToggle("InstantPrompts", { Text = "Instant Prompts", Default = false, Callback = function(v)
 		Logic.InstantPrompts(v)
@@ -860,9 +972,6 @@ do
 	end })
 	PlayerGroupbox:AddDropdown("AutoInteractTarget", { Values = { "Gold", "Keys", "All Items" }, Default = "Gold", Text = "Interact Target", Callback = function(v)
 		Logic.SetAutoInteractTarget(v)
-	end })
-	PlayerGroupbox:AddSlider("FOVValue", { Text = "Field of View", Default = 70, Min = 30, Max = 120, Rounding = 0, Callback = function(v)
-		Logic.SetFOV(v)
 	end })
 end
 debugNotify("created Tabs.Main")
