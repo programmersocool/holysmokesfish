@@ -84,7 +84,7 @@ end
 local SCRIPT_HUB_NAME = "cooliopoolio47-hub"
 local SCRIPT_HUB_GAME = "Doors"
 local SCRIPT_HUB_PLACE = "Hotel"
-local SCRIPT_VERSION = "0.0.9" -- please use semver (https://semver.org/)
+local SCRIPT_VERSION = "0.0.11" -- please use semver (https://semver.org/)          ill think about him hmmmmmmm
 local SCRIPT_ID = SCRIPT_HUB_NAME .. "/" .. SCRIPT_HUB_GAME .. "/" .. SCRIPT_HUB_PLACE .. " v" .. SCRIPT_VERSION
 
 -- Services
@@ -160,10 +160,36 @@ function Common.GetCurrentRoomModel()
 	return Common.Rooms:FindFirstChild(tostring(Common.CurrentRoom))
 end
 
+-- Simple CurrentRoom tracker using player attribute
+local function updateCurrentRoom()
+	local char = game.Players.LocalPlayer.Character
+	if char then
+		local room = char:GetAttribute("CurrentRoom")
+		if room and Common.CurrentRoom ~= room then
+			Common.CurrentRoom = room
+			print(SCRIPT_ID .. ": Entered room " .. tostring(room))
+			Common.RoomChanged:Fire()
+		end
+	end
+end
+
+-- Update on attribute change and character spawn
+local function connectRoomAttribute()
+	local char = game.Players.LocalPlayer.Character
+	if not char then return end
+	char:GetAttributeChangedSignal("CurrentRoom"):Connect(updateCurrentRoom)
+	updateCurrentRoom()
+end
+
+game.Players.LocalPlayer.CharacterAdded:Connect(connectRoomAttribute)
+if game.Players.LocalPlayer.Character then
+	connectRoomAttribute()
+end
+
 -- TweenInstance
 -- fade-in/out effects for esp elements
--- TODO: optimize this
 do
+	-- TODO: optimize this
 	function Common.TweenInstance(instance: Instance, fadeout: boolean): ()
 		local function destroyInstance(): ()
 			instance:Destroy()
@@ -729,7 +755,7 @@ do
 		end
 	end
 end
--- Anti-Screech, Speed, Prompts, FOV, Animation
+-- Anti-Screech, Speed, Prompts, FOV, twerk
 do
 	Logic.AntiScreech = function(enable: boolean)
 		local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech")
@@ -964,38 +990,7 @@ do
 	Logic.SetAutoInteractTarget = function(target)
 		autoInteractTarget = target
 	end
-
-
 end
-
--- room and ESP distance tracker
-task.spawn(function()
-	local function getCurrentRoom(player)
-		Common.CurrentRoom = game.Players.LocalPlayer:GetAttribute("CurrentRoom")
-	end
-	
-
-	RunService.RenderStepped:Connect(function()
-		local playerChar = Players.LocalPlayer.Character
-		if not playerChar or not playerChar.PrimaryPart then return end
-		local playerPos = playerChar.PrimaryPart.Position
-		for espKey, esp in pairs(ActiveESPs) do
-			if esp.adornee and esp.adornee.Parent then
-				local adorneePos
-				if esp.adornee:IsA("BasePart") then
-					adorneePos = esp.adornee.Position
-				elseif esp.adornee:IsA("Model") then
-					adorneePos = esp.adornee:GetPivot().Position
-				end
-
-				if adorneePos then
-					local dist = math.round((playerPos - adorneePos).Magnitude)
-					esp.distanceLabel.Text = "[" .. dist .. " studs]"
-				end
-			end
-		end
-	end)
-end)
 
 debugNotify("initialized Logic")
 
