@@ -1,3 +1,4 @@
+--TODO: i need to redo the code that detects room player is in
 warn("check your closet")
 print(if math.random(1, 100) == 1 then [[
 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣛⣛⣛⠋⠭⠭⢤⣭⣭⣉⣉⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
@@ -38,7 +39,7 @@ print(if math.random(1, 100) == 1 then [[
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣾⣿⣿⣿⣿⡝⠀⠀⠀⠈⠸⠗⠽⣼⣿⣿⣿⣿⢆⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣴⣷⣧⣤⡀⢰⣷⣻⣿⣿⣿⣿⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⢹⣿⣿⣿⣿⣿⡝⣴⣿⣿⣿⣯⣍⠀⠈⡌⡟⠛⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣽⣿⣿⣿⣿⣿⣿⣿⠣⣺⣗⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿👁️⣽⣿⣿⣿⣿👁️⣿⠣⣺⣗⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣟⣝⢻⡿⠟⣻⡟⠋⠉⢋⡟⣷⠎⣄⢁⠊⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⡇⠀⡀⣿⡧⠀⡴⡾⠰⠁⢙⣦⣭⣼⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣾⣄⣿⣿⣾⣆⣤⣖⣠⣾⡗⣾⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -350,64 +351,91 @@ end
 
 -- Door ESP
 do
-	local doorData, roomConn = {}, nil
+	local doorData = {}
+	local roomConn
+
 	local function cleanupDoor(part)
-		if doorData[part] then
-			Common.TweenInstance(doorData[part].highlight, true)
-			Common.TweenInstance(doorData[part].billboard, true)
+		local data = doorData[part]
+		if data then
+			Common.TweenInstance(data.highlight, true)
+			Common.TweenInstance(data.billboard, true)
 			ActiveESPs[part] = nil
 			doorData[part] = nil
 		end
 	end
+
 	local function setupDoor(part)
-		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide then
-			return
-		end
+		if doorData[part] or not part:IsA("BasePart") or not part.CanCollide or part.Name ~= "Door" then return end
+
 		local model = part.Parent
-		if not (model:IsA("Model") and model.Name == "Door") then
-			return
-		end
+		if not (model and model:IsA("Model") and model.Name == "Door") then return end
+
 		local highlight = Instance.new("Highlight")
-		highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = part, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 0), Enum.HighlightDepthMode.AlwaysOnTop, 0.5
+		highlight.Parent = part -- only highlight the door part
+		highlight.FillColor = Color3.fromRGB(0, 255, 0)
+		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.FillTransparency = 0.75
+		highlight.OutlineTransparency = 0.25
+
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
-		if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
-			doorText = "Door: " .. sign.Stinker.Text
+		local stinker = sign and sign:FindFirstChild("Stinker")
+		if stinker and stinker:IsA("TextLabel") then
+			local num = tonumber(stinker.Text)
+			if num then
+				local nextRoom = Common.Rooms:FindFirstChild(tostring(num))
+				local rawName = nextRoom and nextRoom:GetAttribute("RawName") or ""
+				doorText = "Door: " .. stinker.Text .. (rawName ~= "" and " - " .. rawName or "")
+			end
 		end
-		local guiElements = Common.CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
+
+		local guiElements = Common.CreateBillboardGui({
+			Parent = part,
+			Adornee = part,
+			Text = doorText,
+			TextColor = Color3.fromRGB(0, 255, 0)
+		})
+
 		doorData[part] = { highlight = highlight, billboard = guiElements.gui }
 		ActiveESPs[part] = { adornee = part, distanceLabel = guiElements.distanceLabel }
+
 		Common.TweenInstance(highlight, false)
 		Common.TweenInstance(guiElements.gui, false)
 	end
+
 	local function updateDoors()
-		for part, _ in pairs(doorData) do
-			cleanupDoor(part)
-		end
-		for _, d in ipairs(Common.Rooms:GetDescendants()) do -- more performant search
-			if d.Name == "Door" and d:IsA("BasePart") then
-				local sign = d.Parent and d.Parent:FindFirstChild("Sign")
-				if sign and sign:FindFirstChild("Stinker") and sign.Stinker:IsA("TextLabel") then
-					local num = tonumber(sign.Stinker.Text)
+		-- clear old doors
+		for part in pairs(doorData) do cleanupDoor(part) end
+		doorData = {} -- reset table for fresh start
+
+		for _, desc in ipairs(Common.Rooms:GetDescendants()) do
+			if desc.Name == "Door" and desc:IsA("BasePart") then
+				local model = desc.Parent
+				local sign = model and model:FindFirstChild("Sign")
+				local stinker = sign and sign:FindFirstChild("Stinker")
+				if stinker and stinker:IsA("TextLabel") then
+					local num = tonumber(stinker.Text)
 					if num and (num == Common.CurrentRoom or num == Common.CurrentRoom + 1) then
-						setupDoor(d)
+						setupDoor(desc)
 					end
 				end
 			end
 		end
 	end
-	Logic.DoorESP = function(enable: boolean)
+
+	Logic.DoorESP = function(enable)
 		if enable then
+			if roomConn then return end -- avoid duplicate connections
 			roomConn = Common.RoomChanged:Connect(updateDoors)
 			updateDoors()
 		else
 			if roomConn then
-				Common.RoomChanged:Disconnect(roomConn)
+				roomConn:Disconnect()
 				roomConn = nil
 			end
-			for p, _ in pairs(doorData) do
-				cleanupDoor(p)
-			end
+			for part in pairs(doorData) do cleanupDoor(part) end
+			doorData = {}
 		end
 	end
 end
@@ -418,11 +446,6 @@ do
 	local espConnection = nil
 	local alertConnection = nil
 
-	--[[
-		ALERT LOGIC
-		- This is controlled by the "Monster Alert" toggle.
-		- It listens for specific monster models being added to the Workspace.
-	]]
 	local function onAlertEntityAdded(entity)
 		local name = entity.Name
 		if name == "RushMoving" or name == "AmbushMoving" or name == "Eyes" then
@@ -434,7 +457,6 @@ do
 	Logic.SetMonsterAlert = function(enable)
 		if enable then
 			if not alertConnection then
-				-- Check for existing entities in case the script is run mid-game
 				for _, child in ipairs(Workspace:GetChildren()) do
 					onAlertEntityAdded(child)
 				end
@@ -448,11 +470,6 @@ do
 		end
 	end
 
-	--[[
-		ESP LOGIC
-		- This is controlled by the "Monster ESP" toggle.
-		- It creates highlights and billboards for monsters.
-	]]
 	local function cleanupMonster(entity)
 		if monsterData[entity] then
 			if monsterData[entity].highlight then
@@ -478,7 +495,7 @@ do
 		if not entity or not entity.Parent or monsterData[entity] then return end
 
 		local monsterText, highlightPart, adorneePart, fillTransparency, partToMakeVisible, originalTransparency
-		fillTransparency = 0.5 -- Default value
+		fillTransparency = 0.75 -- balls
 
 		if entity:IsA("BasePart") and entity.Name == "RushNew" then
 			partToMakeVisible = entity
@@ -491,12 +508,11 @@ do
 			end
 		elseif entity:IsA("Model") and entity.Name == "Eyes" then
 			local core = entity:FindFirstChild("Core")
-			if not core then return end -- Don't run if Core doesn't exist
+			if not core then return end
 			partToMakeVisible = core
 			highlightPart = core
 			adorneePart = core
 			monsterText = "Eyes"
-			fillTransparency = 0 -- Custom transparency for Eyes ESP
 		end
 
 		if not (monsterText and highlightPart and adorneePart) then return end
@@ -585,7 +601,7 @@ do
 				return
 			end
 			local highlight = Instance.new("Highlight")
-			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop, 0.5
+			highlight.Parent, highlight.FillColor, highlight.OutlineColor, highlight.DepthMode, highlight.FillTransparency = model, itemConfig.Color, itemConfig.Color, Enum.HighlightDepthMode.AlwaysOnTop, 0.75
 			local adornee = model.PrimaryPart or firstPart
 			local espText
 			if itemConfig.TextGenerator then
@@ -650,6 +666,104 @@ do
 			end
 		end
 	end
+	
+	Logic.DynamicItemESP = function(enable)
+		local visibleItems = {}
+		local itemConns = {}
+
+		local function isItemModel(model)
+			if not model:IsA("Model") then return false end
+			if model.Parent == Common.Rooms or tonumber(model.Name) then return false end -- skip rooms
+
+			local size = model:GetExtentsSize()
+			if size.X > 10 or size.Y > 10 or size.Z > 10 then return false end -- skip big stuff like furniture
+
+			local prompt = model:FindFirstChild("ModulePrompt", true) -- must be named ModulePrompt
+			if not (prompt and prompt:IsA("ProximityPrompt")) then
+				if model.Parent == Common.Drops then return true end
+				return false
+			end
+
+			-- criteria 1: ModulePrompt + Handle + Main
+			local handle = model:FindFirstChild("Handle", true)
+			local main = model:FindFirstChild("Main", true)
+			if handle and main then return true end
+
+			-- criteria 3: ModulePrompt + Hitbox + Sign (extra prompt check dropped as it was duplicate)
+			local hitbox = model:FindFirstChild("Hitbox", true)
+			local sign = model:FindFirstChild("Sign", true)
+			if hitbox and sign then return true end
+
+			return false
+		end
+
+		local function cleanup(model)
+			local data = visibleItems[model]
+			if data then
+				Common.TweenInstance(data.highlight, true)
+				Common.TweenInstance(data.billboard, true)
+				ActiveESPs[model] = nil
+				visibleItems[model] = nil
+			end
+		end
+
+		local function setup(model)
+			if visibleItems[model] then return end
+
+			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
+			if not firstPart then return end
+			local color = Color3.new(0.152941, 1, 0.435294)
+			local highlight = Instance.new("Highlight")
+			highlight.Parent = model
+			highlight.FillColor = color
+			highlight.OutlineColor = color
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.FillTransparency = 0.75
+
+			local adornee = model.PrimaryPart or firstPart
+
+			-- special names for certain items
+			local espText = model.Name
+			if model.Name == "Crucifix" then
+				espText = "CRUCIFIX!!!"
+			elseif model.Name == "SkeletonKey" then
+				espText = "Skeleton Key"
+			elseif model.Name == "KeyObtain" then
+				espText = "Key"
+			end
+
+			local guiElements = Common.CreateBillboardGui({
+				Parent = adornee,
+				Adornee = adornee,
+				Text = espText,
+				TextColor = color
+			})
+
+			visibleItems[model] = { highlight = highlight, billboard = guiElements.gui }
+			ActiveESPs[model] = { adornee = adornee, distanceLabel = guiElements.distanceLabel }
+
+			Common.TweenInstance(highlight, false)
+			Common.TweenInstance(guiElements.gui, false)
+		end
+
+		if enable then
+			local containers = {Common.Rooms, Common.Drops}
+			for _, container in ipairs(containers) do
+				for _, desc in ipairs(container:GetDescendants()) do
+					if isItemModel(desc) then setup(desc) end
+				end
+				local conn = container.DescendantAdded:Connect(function(desc)
+					if isItemModel(desc) then task.wait(); setup(desc) end
+				end)
+				table.insert(itemConns, conn)
+			end
+		else
+			for _, conn in ipairs(itemConns) do conn:Disconnect() end
+			itemConns = {}
+			for model in pairs(visibleItems) do cleanup(model) end
+		end
+	end
+	
 	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local objectives = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" }, ["LiveBreakerPolePickup"] = { Color = Color3.fromRGB(150, 150, 150), Text = "Breaker" } }
@@ -697,7 +811,7 @@ do
 		highlight.FillColor = Color3.fromRGB(0, 255, 255)  -- cyan
 		highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		highlight.FillTransparency = 0.5
+		highlight.FillTransparency = 0.75
 		highlight.OutlineTransparency = 0
 
 		local guiElements = Common.CreateBillboardGui({
@@ -719,7 +833,7 @@ do
 		}
 		ActiveESPs[player] = { adornee = head, distanceLabel = guiElements.distanceLabel }
 		highlight.FillTransparency, highlight.OutlineTransparency = 1, 1
-		local highlightGoal = { FillTransparency = 0.5, OutlineTransparency = 0 }
+		local highlightGoal = { FillTransparency = 0.75, OutlineTransparency = 0 }
 		TweenService:Create(highlight, Common.TWEEN_INFO, highlightGoal):Play()
 		Common.TweenInstance(guiElements.gui, false)
 	end
@@ -755,7 +869,84 @@ do
 		end
 	end
 end
--- Anti-Screech, Speed, Prompts, FOV, twerk
+
+local rainbowEnabled = false
+local rainbowConnection
+local originalColors = {}  -- Track originals for reset
+
+Logic.RainbowESP = function(enable)
+	rainbowEnabled = enable
+	if enable then
+		if rainbowConnection then return end
+		rainbowConnection = RunService.Heartbeat:Connect(function()
+			local hue = (tick() % 5) / 5
+			local rainbowColor = Color3.fromHSV(hue, 1, 1)
+			for key, esp in pairs(ActiveESPs) do
+				if esp.adornee and esp.adornee.Parent then
+					local targets = {esp.adornee, esp.adornee.Parent}
+					for _, target in ipairs(targets) do
+						if not target then continue end
+
+						local highlight = target:FindFirstChildOfClass("Highlight")
+						if highlight then
+							if not originalColors[key] then
+								originalColors[key] = {
+									fill = highlight.FillColor,
+									outline = highlight.OutlineColor
+								}
+							end
+							highlight.FillColor = rainbowColor
+							highlight.OutlineColor = rainbowColor
+						end
+
+						local billboard = target:FindFirstChildOfClass("BillboardGui")
+						if billboard then
+							for _, child in ipairs(billboard:GetChildren()) do
+								if child:IsA("TextLabel") then
+									if not originalColors[key] then originalColors[key] = {} end
+									if not originalColors[key][child] then
+										originalColors[key][child] = child.TextColor3
+									end
+									child.TextColor3 = rainbowColor
+								end
+							end
+						end
+					end
+				end
+			end
+		end)
+	else
+		if rainbowConnection then
+			rainbowConnection:Disconnect()
+			rainbowConnection = nil
+		end
+		for key, originals in pairs(originalColors) do
+			local esp = ActiveESPs[key]
+			if esp and esp.adornee and esp.adornee.Parent then
+				local targets = {esp.adornee, esp.adornee.Parent}
+				for _, target in ipairs(targets) do
+					if not target then continue end
+					local highlight = target:FindFirstChildOfClass("Highlight")
+					if highlight and originals.fill then
+						highlight.FillColor = originals.fill
+						highlight.OutlineColor = originals.outline
+					end
+					local billboard = target:FindFirstChildOfClass("BillboardGui")
+					if billboard then
+						for _, child in ipairs(billboard:GetChildren()) do
+							if child:IsA("TextLabel") and originals[child] then
+								child.TextColor3 = originals[child]
+							end
+						end
+					end
+				end
+			end
+		end
+		originalColors = {}
+	end
+end
+
+-- Anti-Screech, Speed, Prompts, FOV, Animation
 do
 	Logic.AntiScreech = function(enable: boolean)
 		local r = Common.RemotesFolder:FindFirstChild(enable and "Screech" or "notscreech")
@@ -990,28 +1181,71 @@ do
 	Logic.SetAutoInteractTarget = function(target)
 		autoInteractTarget = target
 	end
+
+
 end
 
-RunService.RenderStepped:Connect(function()
-	local playerChar = Players.LocalPlayer.Character
-	if not playerChar or not playerChar.PrimaryPart then return end
-	local playerPos = playerChar.PrimaryPart.Position
-	for _, esp in pairs(ActiveESPs) do
-		if esp.adornee and esp.adornee.Parent then
-			local adorneePos
-			if esp.adornee:IsA("BasePart") then
-				adorneePos = esp.adornee.Position
-			elseif esp.adornee:IsA("Model") then
-				adorneePos = esp.adornee:GetPivot().Position
-			end
-			if adorneePos then
-				local dist = math.round((playerPos - adorneePos).Magnitude)
-				esp.distanceLabel.Text = "[" .. dist .. " studs]"
-			end
+-- room and ESP distance tracker
+task.spawn(function()
+	local trackedDoors = {}
+	local function cleanupTrackerDoor(part)
+		if trackedDoors[part] then
+			trackedDoors[part].ancestryConn:Disconnect()
+			trackedDoors[part].collideConn:Disconnect()
+			trackedDoors[part] = nil
 		end
 	end
+	local function setupTrackerDoor(part)
+		if not (part.Name == "Door" and part:IsA("BasePart")) or trackedDoors[part] then
+			return
+		end
+		local collideConn = part:GetPropertyChangedSignal("CanCollide"):Connect(function()
+			if not part.CanCollide then
+				local sign = part.Parent and part.Parent:FindFirstChild("Sign")
+				local stinker = sign and sign:FindFirstChild("Stinker")
+				if stinker and stinker:IsA("TextLabel") then
+					local roomNum = tonumber(stinker.Text)
+					if roomNum and roomNum > Common.CurrentRoom then
+						Common.CurrentRoom = roomNum
+						print(SCRIPT_ID .. ": freaking entered room " .. roomNum)
+						Common.RoomChanged:Fire()
+					end
+				end
+			end
+		end)
+		local ancestryConn = part.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then
+				cleanupTrackerDoor(part)
+			end
+		end)
+		trackedDoors[part] = { collideConn = collideConn, ancestryConn = ancestryConn }
+	end
+	for _, d in ipairs(Workspace:GetDescendants()) do
+		setupTrackerDoor(d)
+	end
+	Workspace.DescendantAdded:Connect(setupTrackerDoor)
+	RunService.RenderStepped:Connect(function()
+		local playerChar = Players.LocalPlayer.Character
+		if not playerChar or not playerChar.PrimaryPart then return end
+		local playerPos = playerChar.PrimaryPart.Position
+		for espKey, esp in pairs(ActiveESPs) do
+			if esp.adornee and esp.adornee.Parent then
+				local adorneePos
+				if esp.adornee:IsA("BasePart") then
+					adorneePos = esp.adornee.Position
+				elseif esp.adornee:IsA("Model") then
+					adorneePos = esp.adornee:GetPivot().Position
+				end
+
+				if adorneePos then
+					local dist = math.round((playerPos - adorneePos).Magnitude)
+					esp.distanceLabel.Text = "[" .. dist .. " studs]"
+				end
+			end
+		end
+	end)
 end)
-					
+
 debugNotify("initialized Logic")
 
 
@@ -1055,7 +1289,7 @@ do
 	PlayerGroupbox:AddSlider("SpeedValue", { Text = "WalkSpeed", Default = 16, Min = 2, Max = 25, Rounding = 0, Callback = function(v)
 		Logic.SetSpeedValue(v)
 	end })
-	PlayerGroupbox:AddSlider("PromptReachValue", { Text = "Reach Multiplier (markiplier)", Default = 1, Min = 0.5, Max = 2, Rounding = 1, Callback = function(v)
+	PlayerGroupbox:AddSlider("PromptReachValue", { Text = "Reach Multiplier (markiplier)", Default = 1, Min = 1, Max = 1.75, Rounding = 0.5, Callback = function(v)
 		Logic.SetPromptReachValue(v)
 	end })
 	PlayerGroupbox:AddToggle("PromptReach", { Text = "Prompt Reach", Default = false, Callback = function(v)
@@ -1102,6 +1336,12 @@ do
 	end })
 	ESPGroupbox:AddToggle("ItemESP", { Text = "Item ESP", Default = false, Callback = function(v)
 		Logic.ItemESP(v)
+	end })
+	ESPGroupbox:AddToggle("DynamicItemESP", { Text = "Item ESP (Dynamic)", Default = false, Callback = function(v)
+		Logic.DynamicItemESP(v)
+	end })
+	ESPGroupbox:AddToggle("RainbowESP", { Text = "Rainbow ESP (All)", Default = false, Callback = function(v)
+		Logic.RainbowESP(v)
 	end })
 	ESPGroupbox:AddToggle("PlayerESP", { Text = "Player ESP", Default = false, Callback = function(v)
 		Logic.PlayerESP(v)
