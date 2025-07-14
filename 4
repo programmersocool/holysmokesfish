@@ -351,77 +351,91 @@ end
 
 -- Door ESP
 do
-	local doorData, roomConn = {}, nil
+	local doorData = {}
+	local roomConn
+
 	local function cleanupDoor(part)
-		if doorData[part] then
-			Common.TweenInstance(doorData[part].highlight, true)
-			Common.TweenInstance(doorData[part].billboard, true)
+		local data = doorData[part]
+		if data then
+			Common.TweenInstance(data.highlight, true)
+			Common.TweenInstance(data.billboard, true)
 			ActiveESPs[part] = nil
 			doorData[part] = nil
 		end
 	end
+
 	local function setupDoor(part)
-		if not part or not part.Parent or not part:IsA("BasePart") or doorData[part] or not part.CanCollide or part.Name ~= "Door" then
-			return
-		end
+		if doorData[part] or not part:IsA("BasePart") or not part.CanCollide or part.Name ~= "Door" then return end
+
 		local model = part.Parent
-		if not (model:IsA("Model") and model.Name == "Door") then
-			return
-		end
+		if not (model and model:IsA("Model") and model.Name == "Door") then return end
+
 		local highlight = Instance.new("Highlight")
-		highlight.Parent = part  -- Parent to the specific "Door" BasePart only
+		highlight.Parent = part -- only highlight the door part
 		highlight.FillColor = Color3.fromRGB(0, 255, 0)
 		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
 		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		highlight.FillTransparency = 0.75  -- Inside
-		highlight.OutlineTransparency = 0.25  -- Outside
+		highlight.FillTransparency = 0.75
+		highlight.OutlineTransparency = 0.25
+
 		local doorText = "Door"
 		local sign = model:FindFirstChild("Sign")
 		local stinker = sign and sign:FindFirstChild("Stinker")
 		if stinker and stinker:IsA("TextLabel") then
 			local num = tonumber(stinker.Text)
 			if num then
-				local nextRoomModel = Common.Rooms:FindFirstChild(tostring(num))
-				local rawName = nextRoomModel and nextRoomModel:GetAttribute("RawName") or ""
+				local nextRoom = Common.Rooms:FindFirstChild(tostring(num))
+				local rawName = nextRoom and nextRoom:GetAttribute("RawName") or ""
 				doorText = "Door: " .. stinker.Text .. (rawName ~= "" and " - " .. rawName or "")
 			end
 		end
-		local guiElements = Common.CreateBillboardGui({ Parent = part, Adornee = part, Text = doorText, TextColor = Color3.fromRGB(0, 255, 0) })
+
+		local guiElements = Common.CreateBillboardGui({
+			Parent = part,
+			Adornee = part,
+			Text = doorText,
+			TextColor = Color3.fromRGB(0, 255, 0)
+		})
+
 		doorData[part] = { highlight = highlight, billboard = guiElements.gui }
 		ActiveESPs[part] = { adornee = part, distanceLabel = guiElements.distanceLabel }
+
 		Common.TweenInstance(highlight, false)
 		Common.TweenInstance(guiElements.gui, false)
 	end
+
 	local function updateDoors()
-		for part, _ in pairs(doorData) do
-			cleanupDoor(part)
-		end
-		for _, d in ipairs(Common.Rooms:GetDescendants()) do -- more performant search
-			if d.Name == "Door" and d:IsA("BasePart") then
-				local model = d.Parent
+		-- clear old doors
+		for part in pairs(doorData) do cleanupDoor(part) end
+		doorData = {} -- reset table for fresh start
+
+		for _, desc in ipairs(Common.Rooms:GetDescendants()) do
+			if desc.Name == "Door" and desc:IsA("BasePart") then
+				local model = desc.Parent
 				local sign = model and model:FindFirstChild("Sign")
 				local stinker = sign and sign:FindFirstChild("Stinker")
 				if stinker and stinker:IsA("TextLabel") then
 					local num = tonumber(stinker.Text)
 					if num and (num == Common.CurrentRoom or num == Common.CurrentRoom + 1) then
-						setupDoor(d)
+						setupDoor(desc)
 					end
 				end
 			end
 		end
 	end
-	Logic.DoorESP = function(enable: boolean)
+
+	Logic.DoorESP = function(enable)
 		if enable then
+			if roomConn then return end -- avoid duplicate connections
 			roomConn = Common.RoomChanged:Connect(updateDoors)
 			updateDoors()
 		else
 			if roomConn then
-				Common.RoomChanged:Disconnect(roomConn)
+				roomConn:Disconnect()
 				roomConn = nil
 			end
-			for p, _ in pairs(doorData) do
-				cleanupDoor(p)
-			end
+			for part in pairs(doorData) do cleanupDoor(part) end
+			doorData = {}
 		end
 	end
 end
@@ -652,72 +666,94 @@ do
 			end
 		end
 	end
-	Logic.DynamicItemESP = function(enable: boolean)
-		local visibleItems, itemConns = {}, {}
-		local function isItemModel(model)
-			if not model:IsA("Model") then return false end  -- Early exit for non-models
-			-- Skip rooms (direct children of Common.Rooms, or numbered names)
-			if model.Parent == Common.Rooms or tonumber(model.Name) ~= nil then return false end
-			-- Check size to skip large models (e.g., furniture/rooms; items are small)
-			local size = model:GetExtentsSize()
-			if size.X > 10 or size.Y > 10 or size.Z > 10 then return false end
+	
+	Logic.DynamicItemESP = function(enable)
+		local visibleItems = {}
+		local itemConns = {}
 
-			-- Detection criteria (match ANY)
-			local hasPrompt = model:FindFirstChildWhichIsA("ProximityPrompt", true)
-			-- 1: ProximityPrompt (any), Handle, Main
+		local function isItemModel(model)
+			if not model:IsA("Model") then return false end
+			if model.Parent == Common.Rooms or tonumber(model.Name) then return false end -- skip rooms
+
+			local size = model:GetExtentsSize()
+			if size.X > 10 or size.Y > 10 or size.Z > 10 then return false end -- skip big stuff like furniture
+
+			local prompt = model:FindFirstChild("ModulePrompt", true) -- must be named ModulePrompt
+			if not (prompt and prompt:IsA("ProximityPrompt")) then
+				if model.Parent == Common.Drops then return true end
+				return false
+			end
+
+			-- criteria 1: ModulePrompt + Handle + Main
 			local handle = model:FindFirstChild("Handle", true)
 			local main = model:FindFirstChild("Main", true)
-			if hasPrompt and handle and main then return true end
-			-- 2: Anything inside Drops (direct child Model)
-			if model.Parent == Common.Drops then return true end
-			-- 3: ProximityPrompt (any), Hitbox, Sign, ProximityPrompt (duplicate check as specified)
+			if handle and main then return true end
+
+			-- criteria 3: ModulePrompt + Hitbox + Sign (extra prompt check dropped as it was duplicate)
 			local hitbox = model:FindFirstChild("Hitbox", true)
 			local sign = model:FindFirstChild("Sign", true)
-			local extraPrompt = model:FindFirstChildWhichIsA("ProximityPrompt", true)  -- Separate var for duplicate
-			if hasPrompt and hitbox and sign and extraPrompt then return true end
+			if hitbox and sign then return true end
 
 			return false
 		end
+
 		local function cleanup(model)
-			if visibleItems[model] then
-				Common.TweenInstance(visibleItems[model].highlight, true)
-				Common.TweenInstance(visibleItems[model].billboard, true)
+			local data = visibleItems[model]
+			if data then
+				Common.TweenInstance(data.highlight, true)
+				Common.TweenInstance(data.billboard, true)
 				ActiveESPs[model] = nil
 				visibleItems[model] = nil
 			end
 		end
+
 		local function setup(model)
 			if visibleItems[model] then return end
-			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)  -- Recursive for safety
+
+			local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
 			if not firstPart then return end
-			-- Assign random color (not one color; varies per item)
-			local randomColor = Color3.fromHSV(math.random(), 1, 1)  -- Random hue, full saturation/brightness
+
 			local highlight = Instance.new("Highlight")
 			highlight.Parent = model
-			highlight.FillColor = randomColor
-			highlight.OutlineColor = randomColor
+			highlight.FillColor = Color3.new(0.152941, 1, 0.435294)
+			highlight.OutlineColor = Color3.new(0.152941, 1, 0.435294) -- im bored so im not gonna round this maxxus you can if you feel like it but it doesnt matter
 			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 			highlight.FillTransparency = 0.75
+
 			local adornee = model.PrimaryPart or firstPart
+
+			-- special names for certain items
+			local espText = model.Name
+			if model.Name == "Crucifix" then
+				espText = "CRUCIFIX!!!"
+			elseif model.Name == "SkeletonKey" then
+				espText = "Skeleton Key"
+			elseif model.Name == "KeyObtain" then
+				espText = "Key"
+			end
+
 			local guiElements = Common.CreateBillboardGui({
 				Parent = adornee,
 				Adornee = adornee,
-				Text = model.Name,  -- Use the model's name as the text
+				Text = espText,
 				TextColor = randomColor
 			})
+
 			visibleItems[model] = { highlight = highlight, billboard = guiElements.gui }
 			ActiveESPs[model] = { adornee = adornee, distanceLabel = guiElements.distanceLabel }
+
 			Common.TweenInstance(highlight, false)
 			Common.TweenInstance(guiElements.gui, false)
 		end
+
 		if enable then
 			local containers = {Common.Rooms, Common.Drops}
 			for _, container in ipairs(containers) do
-				for _, d in ipairs(container:GetDescendants()) do
-					if isItemModel(d) then setup(d) end
+				for _, desc in ipairs(container:GetDescendants()) do
+					if isItemModel(desc) then setup(desc) end
 				end
-				local conn = container.DescendantAdded:Connect(function(d)
-					if isItemModel(d) then task.wait() setup(d) end
+				local conn = container.DescendantAdded:Connect(function(desc)
+					if isItemModel(desc) then task.wait(); setup(desc) end
 				end)
 				table.insert(itemConns, conn)
 			end
@@ -727,6 +763,7 @@ do
 			for model in pairs(visibleItems) do cleanup(model) end
 		end
 	end
+	
 	local items = { ["KeyObtain"] = { Color = Color3.fromRGB(255, 255, 0) }, ["Lighter"] = { Color = Color3.fromRGB(255, 165, 0) }, ["Flashlight"] = { Color = Color3.fromRGB(200, 200, 200) }, ["Vitamins"] = { Color = Color3.fromRGB(255, 105, 180) }, ["Bandage"] = { Color = Color3.fromRGB(255, 255, 255) }, ["Lockpicks"] = { Color = Color3.fromRGB(100, 100, 100) }, ["Candle"] = { Color = Color3.fromRGB(255, 250, 205) }, ["Battery"] = { Color = Color3.fromRGB(50, 205, 50) }, ["SkeletonKey"] = { Color = Color3.fromRGB(255, 255, 255), Text = "Skeleton Key" }, ["Crucifix"] = { Color = Color3.fromRGB(255, 165, 0), Text = "CRUCIFIX!!!!!" }, ["Smoothie"] = { Color = Color3.fromRGB(255, 250, 205) } }
 	local hidingSpots = { ["Wardrobe"] = { Color = Color3.fromRGB(0, 150, 255) }, ["Locker"] = { Color = Color3.fromRGB(0, 150, 255) } }
 	local objectives = { ["LiveHintBook"] = { Color = Color3.fromRGB(148, 0, 211), Text = "Book" }, ["LiveBreakerPolePickup"] = { Color = Color3.fromRGB(150, 150, 150), Text = "Breaker" } }
